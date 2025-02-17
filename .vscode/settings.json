@@ -1,0 +1,10 @@
+{
+  "files.associations": {
+    "random": "c",
+    "*.m": "c",
+    "core.h": "c",
+    "unistd.h": "c",
+    "types.h": "c",
+    "graphics.h": "c"
+  }
+}
