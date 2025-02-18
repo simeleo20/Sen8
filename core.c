@@ -1,5 +1,9 @@
 #include "types.h"
 #include "core.h"
+#include "lua.h"
+#include "raylib.h"
+#include <stdlib.h>
+#include "oslua.c"
 
 #define SCREEN_WIDTH 256
 #define SCREEN_HEIGHT 240
@@ -16,16 +20,19 @@ sprite sprites[64];
 
 u8 screen[SCREEN_HEIGHT][SCREEN_WIDTH]; //32*30
 
+string script;
+languageE language = LUA;
+
 // colors palette
 const rgb palette[16] = {
-    {0, 0, 0},       // black
-    {29, 43, 83},    // dark-blue
-    {126, 37, 83},   // dark-purple
-    {0, 135, 81},    // dark-green
-    {171, 82, 54},   // brown
-    {95, 87, 79},    // dark-grey
-    {194, 195, 199}, // light-grey
-    {255, 241, 232}, // white
+    {0, 0, 0},       // black 0
+    {29, 43, 83},    // dark-blue 1
+    {126, 37, 83},   // dark-purple 2
+    {0, 135, 81},    // dark-green 3
+    {171, 82, 54},   // brown 4
+    {95, 87, 79},    // dark-grey 5
+    {194, 195, 199}, // light-grey 6
+    {255, 241, 232}, // white 7
     {255, 0, 77},    // red
     {255, 163, 0},   // orange
     {255, 236, 39},  // yellow
@@ -35,6 +42,58 @@ const rgb palette[16] = {
     {255, 119, 168}, // pink
     {255, 204, 170}  // light-peach
 };
+
+void coreVBLANK()
+{
+    if(language == LUA)
+    {
+        execLuaVBLANK();
+    }
+}
+void coreLoop()
+{
+    if(language == LUA)
+    {
+        execLuaLoop();
+    }
+}
+string fileToString(cstring filename)
+{
+    int fileSize;
+    unsigned char *buffer = LoadFileData(filename, &fileSize);
+    string out = malloc(fileSize+1);
+    int i;
+    for(i = 0; i < fileSize; i++)
+    {
+        out[i] = buffer[i];
+    }
+    out[i] = '\0';
+    return out;
+}
+void coreSetup()
+{
+    free(script);
+    //script = fileToString("os.lua");
+
+    script = malloc(strlen(os) + 1);
+    strcpy(script, os);
+    
+    
+    if(language == LUA)
+    {
+        initLua(script);
+        execLuaSetup();
+    }
+}
+void closeScript()
+{
+    if(language == LUA)
+    {
+        closeLua();
+    }
+}
+
+
 
 void pixelToScreen(int x, int y, u8 color)
 {
@@ -151,7 +210,22 @@ tile prova = {
     {1, 1, 1, 1, 1, 1, 1, 1},
     {8, 8, 8, 8, 8, 8, 8, 8},
 };
-
+void populateBG()
+{
+    tile a ={{1, 1, 1, 1, 1, 1, 1, 1},
+             {1, 1, 1, 1, 1, 1, 1, 1},
+             {1, 1, 1, 1, 7, 7, 1, 1},
+             {1, 1, 1, 1, 1, 1, 7, 1},
+             {1, 1, 1, 1, 7, 7, 7, 1},
+             {1, 1, 1, 7, 1, 1, 7, 1},
+             {1, 1, 1, 1, 7, 7, 7, 1},
+             {1, 1, 1, 1, 1, 1, 1, 1}};
+    for(int i = 0; i < 8; i++) {
+        for(int j = 0; j < 8; j++) {
+            bgTilesMem[1][i][j] = a[i][j];
+        }
+    }
+}
 void initScreen()
 {
     for(int x = 0; x < 256; x++)
@@ -190,4 +264,7 @@ void initScreen()
             bgTilesMem[1][i][j] = prova[i][j];
         }
     }
+    populateBG();
 }
+
+

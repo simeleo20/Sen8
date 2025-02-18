@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include "core.c"
-#include "lua.h"
 #include "graphics.h"
 
 int screenWidth = 256;
@@ -67,6 +66,14 @@ bool btn(u8 btncode)
     }
     return false;
 }
+int getKeyPressed()
+{
+    return GetKeyPressed();
+}
+int getCharPressed()
+{
+    return GetCharPressed();
+}
 
 int main(void)
 {
@@ -75,19 +82,16 @@ int main(void)
     InitWindow(256, 240, "raylib [shapes] example - raylib logo using shapes");
     // This should use the flag FLAG_FULLSCREEN_MODE which results in a possible ToggleFullscreen() call later on
     SetWindowState(FLAG_WINDOW_RESIZABLE);
-
+    SetExitKey(0);
     // Request a texture to render to. The size is the screen size of the raylib example.
     RenderTexture2D renderTexture = LoadRenderTexture(screenWidth, screenHeight);
 
-    initLua("script.lua");
-
-    execLuaSetup();
-
+    coreSetup();
 
     while (!WindowShouldClose())
     {
         corePPUDraw();
-        execLuaLoop();
+        coreLoop();
         // Instead of using BeginDrawing() we render to the render texture. Everything else stays unchanged
         BeginTextureMode(renderTexture);
         ClearBackground(RAYWHITE);
@@ -120,17 +124,17 @@ int main(void)
         EndDrawing();
 
         // VBLANK
-        execLuaVBLANK();
+        coreVBLANK();
 
-        printf("Width: %d, Height: %d\n", GetScreenWidth(), GetScreenHeight());
+        //printf("Width: %d, Height: %d\n", GetScreenWidth(), GetScreenHeight());
         Vector2 mousePosition = calcMousePosition();
-        printf("Mouse Position: [%f, %f]\n", mousePosition.x, mousePosition.y);
+        //printf("Mouse Position: [%f, %f]\n", mousePosition.x, mousePosition.y);
     }
 
     // Unload the texture handle again to make a clean exit.
     UnloadRenderTexture(renderTexture);
 
-    closeLua();
+    closeScript();
 
     CloseWindow();
 

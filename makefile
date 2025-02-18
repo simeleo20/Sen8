@@ -3,7 +3,7 @@ CFLAGS = -Wall -Wextra -I"C:/raylib/raylib/src" -I"C:\Program Files\Lua\include"
 LDFLAGS = -L"C:/raylib/raylib/src" -L"C:\Program Files\Lua" -llua54
 LIBS = -lraylib -lopengl32 -lgdi32 -lwinmm
 
-graphics: graphics.c lua.c
+graphics: graphics.c lua.c os.lua oslua.c
 	$(CC) $(CFLAGS) -o graphics graphics.c lua.c $(LDFLAGS) $(LIBS)
 	graphics
 
@@ -13,3 +13,9 @@ lua: lua.c
 
 clean:
 	del graphics.exe *.o
+
+osCgenerator: os.lua
+	$(CC) $(CFLAGS) -o osCgenerator osCgenerator.c $(LDFLAGS) $(LIBS)
+
+oslua.c: os.lua osCgenerator
+	osCgenerator

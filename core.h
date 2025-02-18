@@ -34,7 +34,7 @@ typedef struct sprite
 #define BUTTON_MOUSEL 6
 #define BUTTON_MOUSER 7
 
-
+typedef enum languageE { LUA, PYTHON, JS } languageE;
 
 void initScreen();
 void corePPUDraw();
@@ -44,5 +44,10 @@ void bgSet(u16 x, u16 y, u8 tileIndex);
 u8 bgGet(u16 x, u16 y);
 void setScrollX(int x);
 void setScrollY(int y);
+
+void coreVBLANK();
+void coreLoop();
+void coreSetup();
+void closeScript();
 
 #endif // CORE_H

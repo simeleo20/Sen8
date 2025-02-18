@@ -5,5 +5,7 @@
 
 Vector2 calcMousePosition();
 bool btn(u8 btncode);
+int getKeyPressed();
+int getCharPressed();
 
 #endif // GRAPHICS_H

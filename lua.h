@@ -1,7 +1,9 @@
 #ifndef LUA_H
 #define LUA_H
 
-void initLua(const char* filename);
+#include "types.h"
+
+void initLua(string script);
 void closeLua();
 void execLuaVBLANK();
 void execLuaLoop();

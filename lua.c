@@ -53,6 +53,16 @@ int luaSetScrollY(lua_State *L)
     setScrollY(y);
     return 0; // number of results
 }
+int luaGetKeyPressed(lua_State *L)
+{
+    lua_pushnumber(L, getKeyPressed());
+    return 1; // number of results
+}
+int luaGetCharPressed(lua_State *L)
+{
+    lua_pushnumber(L, getCharPressed());
+    return 1; // number of results
+}
 
 void registerFunctions()
 {
@@ -63,15 +73,18 @@ void registerFunctions()
     lua_register(L, "btn", luaBtn);
     lua_register(L, "setScrollX", luaSetScrollX);
     lua_register(L, "setScrollY", luaSetScrollY);
+    lua_register(L, "getKeyPressed", luaGetKeyPressed);
+    lua_register(L, "getCharPressed", luaGetCharPressed);
 }
 
 
-void initLua(const char* filename)
+
+void initLua(string script)
 {
     L = luaL_newstate();
     luaL_openlibs(L);
     registerFunctions();
-    if (luaL_dofile(L, filename) != LUA_OK) {
+    if (luaL_dostring(L, script) != LUA_OK) {
         fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
         lua_pop(L, 1);
     }
@@ -88,17 +101,32 @@ void execLuaVBLANK()
     lua_getglobal(L, "Vblank");
     if(lua_isfunction(L, -1))
         lua_call(L, 0, 0);
+    else
+    {
+        lua_pop(L, 1);
+        //printf("Vblank not found!!!\n");
+    }
 }
 void execLuaLoop()
 {
     lua_getglobal(L, "loop");
     if(lua_isfunction(L, -1))
         lua_call(L, 0, 0);
+    else
+    {
+        lua_pop(L, 1);
+        printf("Loop not found!!!\n");
+    }
 }
 void execLuaSetup()
 {
     lua_getglobal(L, "setup");
     if(lua_isfunction(L, -1))
         lua_call(L, 0, 0);
+    else
+    {
+        lua_pop(L, 1);
+        printf("Setup not found!!!\n");
+    }
 }
 
