@@ -42,6 +42,7 @@ void corePPUDraw();
 
 void bgSet(u16 x, u16 y, u8 tileIndex);
 u8 bgGet(u16 x, u16 y);
+void bgTileLoad(u8 index, tile t);
 void setScrollX(int x);
 void setScrollY(int y);
 

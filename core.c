@@ -73,10 +73,10 @@ string fileToString(cstring filename)
 void coreSetup()
 {
     free(script);
-    //script = fileToString("os.lua");
+    script = fileToString("editor.lua");
 
-    script = malloc(strlen(os) + 1);
-    strcpy(script, os);
+    //script = malloc(strlen(os) + 1);
+    //strcpy(script, os);
     
     
     if(language == LUA)
@@ -155,6 +155,16 @@ u8 bgGet(u16 x, u16 y)
     if(x >= 64 || y >= 60) return -1;
     return bgMap[y][x];
 }
+void bgTileLoad(u8 index, tile t)
+{
+    for(int i = 0; i < 8; i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            bgTilesMem[index][j][i] = t[j][i];
+        }
+    }
+}
 
 void setScrollX(int x)
 {
@@ -212,17 +222,14 @@ tile prova = {
 };
 void populateBG()
 {
-    tile a ={{1, 1, 1, 1, 1, 1, 1, 1},
-             {1, 1, 1, 1, 1, 1, 1, 1},
-             {1, 1, 1, 1, 7, 7, 1, 1},
-             {1, 1, 1, 1, 1, 1, 7, 1},
-             {1, 1, 1, 1, 7, 7, 7, 1},
-             {1, 1, 1, 7, 1, 1, 7, 1},
-             {1, 1, 1, 1, 7, 7, 7, 1},
-             {1, 1, 1, 1, 1, 1, 1, 1}};
-    for(int i = 0; i < 8; i++) {
-        for(int j = 0; j < 8; j++) {
-            bgTilesMem[1][i][j] = a[i][j];
+    for(int color = 0; color < 16; color++)
+    {
+        for(int i = 0; i < 8; i++)
+        {
+            for(int j = 0; j < 8; j++)
+            {
+                bgTilesMem[color][i][j] = color;
+            }
         }
     }
 }
@@ -259,12 +266,13 @@ void initScreen()
             }
         }
     }
+    /*
     for(int i = 0; i < 8; i++) {
         for(int j = 0; j < 8; j++) {
             bgTilesMem[1][i][j] = prova[i][j];
         }
     }
-    populateBG();
+    populateBG();*/
 }
 
 
