@@ -5,6 +5,14 @@
     "core.h": "c",
     "unistd.h": "c",
     "types.h": "c",
-    "graphics.h": "c"
+    "graphics.h": "c",
+    "font.inl": "c",
+    "stdio.h": "c",
+    "array": "c",
+    "string_view": "c",
+    "format": "c",
+    "initializer_list": "c",
+    "span": "c",
+    "string.h": "c"
   }
 }

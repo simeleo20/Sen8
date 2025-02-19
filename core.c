@@ -5,24 +5,13 @@
 #include <stdlib.h>
 #include "oslua.c"
 
-#define SCREEN_WIDTH 256
-#define SCREEN_HEIGHT 240
 
-// Memory banks for sprites and background
-tile spritesTileMem[256];
-tile bgTilesMem[256];
+//current core
+core cCore;
+void printSprites()
+{
 
-u8 bgMap[60][64]; 
-int scrollX = 0;
-int scrollY = 0;
-
-sprite sprites[64];
-
-u8 screen[SCREEN_HEIGHT][SCREEN_WIDTH]; //32*30
-
-string script;
-languageE language = LUA;
-
+}
 // colors palette
 const rgb palette[16] = {
     {0, 0, 0},       // black 0
@@ -45,14 +34,15 @@ const rgb palette[16] = {
 
 void coreVBLANK()
 {
-    if(language == LUA)
+    cls();
+    if(cCore.ram.language == LUA)
     {
         execLuaVBLANK();
     }
 }
 void coreLoop()
 {
-    if(language == LUA)
+    if(cCore.ram.language == LUA)
     {
         execLuaLoop();
     }
@@ -72,22 +62,22 @@ string fileToString(cstring filename)
 }
 void coreSetup()
 {
-    free(script);
-    script = fileToString("editor.lua");
+    free(cCore.ram.script);
+    cCore.ram.script = fileToString("editor.lua");
 
     //script = malloc(strlen(os) + 1);
     //strcpy(script, os);
     
     
-    if(language == LUA)
+    if(cCore.ram.language == LUA)
     {
-        initLua(script);
+        initLua(cCore.ram.script);
         execLuaSetup();
     }
 }
 void closeScript()
 {
-    if(language == LUA)
+    if(cCore.ram.language == LUA)
     {
         closeLua();
     }
@@ -95,26 +85,47 @@ void closeScript()
 
 
 
-void pixelToScreen(int x, int y, u8 color)
+void pixelToScreen(int x, int y, u8 color, s8 z)
 {
-    x -= scrollX;
+    x -= cCore.ram.scrollX;
     x %= SCREEN_WIDTH*2;
-    y -= scrollY;
+    y -= cCore.ram.scrollY;
     y %= SCREEN_HEIGHT*2;
     if(x < 0) x += SCREEN_WIDTH*2;
     if(y < 0) y += SCREEN_HEIGHT*2;
     if(x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) return;
 
-    screen[y][x] = color;
+    if(cCore.ram.zbuffer[y][x] > z) return;
+    cCore.ram.zbuffer[y][x] = z;
+    cCore.ram.screen[y][x] = color;
+    
 }
 
-void drawTile(int x, int y, tile t)
+void drawTile(int x, int y, tile t, bool transparency, s8 z)
 {
     for(int i = 0; i < 8; i++)
     {
         for(int j = 0; j < 8; j++)
         {
-            pixelToScreen(x*8+i,y*8+j, t[j][i]);
+            if(t[j][i] == cCore.ram.transparent && transparency) continue;
+            
+            pixelToScreen(x*8+i,y*8+j, t[j][i], z);
+        }
+    }
+}
+
+//draw tile with screen position
+void drawTileSP(int x, int y, tile t, bool transparency, s8 z)
+{
+    
+
+    for(int i = 0; i < 8; i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            if(t[j][i] == cCore.ram.transparent && transparency) continue;
+
+            pixelToScreen(x+i,y+j, t[j][i], z);
         }
     }
 }
@@ -125,7 +136,7 @@ void drawBackground()
     {
         for(int x = 0; x < 64; x++)
         {
-            drawTile(x, y, bgTilesMem[bgMap[y][x]]);
+            drawTile(x, y, cCore.ram.bgTilesMem[cCore.ram.bgMap[y][x]], true, 0);
         }
     }
 }
@@ -134,26 +145,32 @@ void drawSprites()
 {
     for(int i = 0; i < 64; i++)
     {
-        sprite s = sprites[i];
-        drawTile(s.x, s.y, spritesTileMem[s.tileIndex]);
+        sprite s = cCore.ram.sprites[i];
+        drawTileSP(s.x, s.y, cCore.ram.spritesTileMem[s.tileIndex],true,10);
     }
 }
 
-void corePPUDraw()
+void drawFilled(int x, int y, u8 color)
 {
-    drawBackground();
-    drawSprites();
+    for(int i = 0; i < 8; i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            pixelToScreen(x*8+i, y*8+j, color,5);
+        }
+    }
 }
+
 
 void bgSet(u16 x, u16 y, u8 tileIndex)
 {
     if(x >= 64 || y >= 60) return;
-    bgMap[y][x] = tileIndex;
+    cCore.ram.bgMap[y][x] = tileIndex;
 }
 u8 bgGet(u16 x, u16 y)
 {
     if(x >= 64 || y >= 60) return -1;
-    return bgMap[y][x];
+    return cCore.ram.bgMap[y][x];
 }
 void bgTileLoad(u8 index, tile t)
 {
@@ -161,52 +178,97 @@ void bgTileLoad(u8 index, tile t)
     {
         for(int j = 0; j < 8; j++)
         {
-            bgTilesMem[index][j][i] = t[j][i];
+            cCore.ram.bgTilesMem[index][j][i] = t[j][i];
+        }
+    }
+}
+void spriteTileLoad(u8 index, tile t)
+{
+    for(int i = 0; i < 8; i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            cCore.ram.spritesTileMem[index][j][i] = t[j][i];
         }
     }
 }
 
 void setScrollX(int x)
 {
-    scrollX = x;
+    cCore.ram.scrollX = x;
 }
 void setScrollY(int y)
 {
-    scrollY = y;
+    cCore.ram.scrollY = y;
+}
+
+void cls()
+{
+    for(int x = 0; x < 256; x++)
+    {
+        for(int y = 0; y < 240; y++)
+        {
+            cCore.ram.screen[y][x] = cCore.ram.transparent;
+            cCore.ram.zbuffer[y][x] = -128;
+        }
+    }
+}
+void resetBgMap()
+{
+    for(int i = 0; i < 60; i++)
+    {
+        for(int j = 0; j < 64; j++)
+        {
+            cCore.ram.bgMap[i][j] = 0;
+        }
+    }
 }
 
 void setSprite(u8 index, int x, int y, u8 tileIndex, bool flipH, bool flipV, bool priority)
 {
-    sprites[index].x = x;
-    sprites[index].y = y;
-    sprites[index].tileIndex = tileIndex;
-    sprites[index].flipH = flipH;
-    sprites[index].flipV = flipV;
-    sprites[index].priority = priority;
+    cCore.ram.sprites[index].x = x;
+    cCore.ram.sprites[index].y = y;
+    cCore.ram.sprites[index].tileIndex = tileIndex;
+    cCore.ram.sprites[index].flipH = flipH;
+    cCore.ram.sprites[index].flipV = flipV;
+    cCore.ram.sprites[index].priority = priority;
 }
 void setSpriteX(u8 index, int x)
 {
-    sprites[index].x = x;
+    cCore.ram.sprites[index].x = x;
 }
 void setSpriteY(u8 index, int y)
 {
-    sprites[index].y = y;
+    cCore.ram.sprites[index].y = y;
 }
 void setSpriteTileIndex(u8 index, u8 tileIndex)
 {
-    sprites[index].tileIndex = tileIndex;
+    cCore.ram.sprites[index].tileIndex = tileIndex;
 }
 void setSpriteFlipH(u8 index, bool flipH)
 {
-    sprites[index].flipH = flipH;
+    cCore.ram.sprites[index].flipH = flipH;
 }
 void setSpriteFlipV(u8 index, bool flipV)
 {
-    sprites[index].flipV = flipV;
+    cCore.ram.sprites[index].flipV = flipV;
 }
 void setSpritePriority(u8 index, bool priority)
 {
-    sprites[index].priority = priority;
+    cCore.ram.sprites[index].priority = priority;
+}
+
+void setTransparent(u8 color)
+{
+    cCore.ram.transparent = color;
+}
+
+void corePPUDraw()
+{
+    printSprites();
+
+    drawBackground();
+    drawSprites();
 }
 
 
@@ -228,31 +290,39 @@ void populateBG()
         {
             for(int j = 0; j < 8; j++)
             {
-                bgTilesMem[color][i][j] = color;
+                cCore.ram.bgTilesMem[color][i][j] = color;
             }
         }
     }
 }
+
+
 void initScreen()
 {
+
+    cCore.ram.scrollX = 0;
+    cCore.ram.scrollY = 0;
+    cCore.ram.transparent = 0;
+    cls();
+    resetBgMap();
     for(int x = 0; x < 256; x++)
     {
         for(int y = 0; y < 240; y++)
         {
-            screen[y][x] = 1;
+            cCore.ram.screen[y][x] = cCore.ram.transparent;
         }
     }
-    scrollX = 0;
+    
     //drawTile(64, 0, prova);
     //setup sprites
     for(int i = 0; i < 64; i++)
     {
-        sprites[i].x = -1;
-        sprites[i].y = -1;
-        sprites[i].tileIndex = 0;
-        sprites[i].flipH = false;
-        sprites[i].flipV = false;
-        sprites[i].priority = false;
+        cCore.ram.sprites[i].x = -8;
+        cCore.ram.sprites[i].y = -8;
+        cCore.ram.sprites[i].tileIndex = 0;
+        cCore.ram.sprites[i].flipH = false;
+        cCore.ram.sprites[i].flipV = false;
+        cCore.ram.sprites[i].priority = false;
     }
     //setup bgmem
 
@@ -262,7 +332,7 @@ void initScreen()
         {
             for(int k = 0; k < 8; k++)
             {
-                bgTilesMem[i][j][k] = 1;//<-----------------da mettere zero
+                cCore.ram.bgTilesMem[i][j][k] = cCore.ram.transparent;
             }
         }
     }
@@ -273,6 +343,9 @@ void initScreen()
         }
     }
     populateBG();*/
+
 }
+
+
 
 

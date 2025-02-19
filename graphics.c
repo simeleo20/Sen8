@@ -4,7 +4,7 @@
 
 int screenWidth = 256;
 int screenHeight = 240;
-extern u8 screen[240][256];;
+extern core cCore;
 
 float newScreenWidth;
 float newScreenHeight;
@@ -20,7 +20,7 @@ void drawScreen()
     {
         for(int x = 0; x < 256; x++)
         {
-            putPixel(x, y, screen[y][x]);
+            putPixel(x, y, cCore.ram.screen[y][x]);
         }
     }
 }
@@ -85,13 +85,13 @@ int main(void)
     SetExitKey(0);
     // Request a texture to render to. The size is the screen size of the raylib example.
     RenderTexture2D renderTexture = LoadRenderTexture(screenWidth, screenHeight);
-
     coreSetup();
 
     while (!WindowShouldClose())
     {
+        
         corePPUDraw();
-        coreLoop();
+
         // Instead of using BeginDrawing() we render to the render texture. Everything else stays unchanged
         BeginTextureMode(renderTexture);
         ClearBackground(RAYWHITE);
@@ -122,9 +122,11 @@ int main(void)
             0,
             WHITE);
         EndDrawing();
-
+        coreLoop();
+        
         // VBLANK
         coreVBLANK();
+        
 
         //printf("Width: %d, Height: %d\n", GetScreenWidth(), GetScreenHeight());
         Vector2 mousePosition = calcMousePosition();

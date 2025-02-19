@@ -90,7 +90,6 @@ int luaBgTileLoad(lua_State *L)
     tile out;
     lua_pushnil(L);  // first key
     int y = 0;
-    printf("\n");
     while (lua_next(L, -2) != 0) {
         // key is at -2 and value is at -1
         lua_pushnil(L);  // first key
@@ -110,7 +109,79 @@ int luaBgTileLoad(lua_State *L)
     return 0; // number of results
 
 }
+int luaSpriteTileLoad(lua_State *L)
+{
+    u8 index = lua_tonumber(L, -2);
+    tile out;
+    lua_pushnil(L);  // first key
+    int y = 0;
+    while (lua_next(L, -2) != 0) {
+        // key is at -2 and value is at -1
+        lua_pushnil(L);  // first key
+        while (lua_next(L, -2) != 0) {
+            // key is at -2 and value is at -1
+            u8 key = lua_tonumber(L, -2);
+            u8 value = lua_tonumber(L, -1);
+            out[y][key-1] = value;
+            lua_pop(L, 1);
+        }
+        y++;
+        lua_pop(L, 1);
+    }
 
+    spriteTileLoad(index, out);
+
+    return 0; // number of results
+}
+int luaDrawFilled()
+{
+    int x = lua_tonumber(L, -3);
+    int y = lua_tonumber(L, -2);
+    u8 color = lua_tonumber(L, -1);
+    drawFilled(x, y, color);
+    return 0; // number of results
+}
+int LuaSetTransparent(lua_State *L)
+{
+    u8 color = lua_tonumber(L, -1);
+    setTransparent(color);
+    return 0;
+}
+int LuaSetSprite(lua_State *L)
+{
+    u8 index = lua_tonumber(L, -7);
+    int x = lua_tonumber(L, -6);
+    int y = lua_tonumber(L, -5);
+    u8 tileIndex = lua_tonumber(L, -4);
+    bool flipH = lua_toboolean(L, -3);
+    bool flipV = lua_toboolean(L, -2);
+    bool priority = lua_toboolean(L, -1);
+    setSprite(index, x, y, tileIndex, flipH, flipV, priority);
+    return 0;
+}
+int LuaSetSpriteX(lua_State *L)
+{
+    u8 index = lua_tonumber(L, -2);
+    int x = lua_tonumber(L, -1);
+    setSpriteX(index, x);
+    return 0;
+}
+
+int LuaSetSpriteY(lua_State *L)
+{
+    u8 index = lua_tonumber(L, -2);
+    int y = lua_tonumber(L, -1);
+    setSpriteY(index, y);
+    return 0;
+}
+
+int LuaSetSpriteTileIndex(lua_State *L)
+{
+    u8 index = lua_tonumber(L, -2);
+    u8 tileIndex = lua_tonumber(L, -1);
+    setSpriteTileIndex(index, tileIndex);
+    return 0;
+}
 void registerFunctions()
 {
     lua_register(L, "bgSet", luaBgSet);
@@ -123,6 +194,15 @@ void registerFunctions()
     lua_register(L, "getKeyPressed", luaGetKeyPressed);
     lua_register(L, "getCharPressed", luaGetCharPressed);
     lua_register(L, "bgTileLoad", luaBgTileLoad);
+    lua_register(L, "spriteTileLoad", luaSpriteTileLoad);
+    lua_register(L, "drawFilled", luaDrawFilled);
+    lua_register(L, "setTransparent", LuaSetTransparent);
+    lua_register(L, "setSprite", LuaSetSprite);
+    lua_register(L, "setSpriteX", LuaSetSpriteX);
+    lua_register(L, "setSpriteY", LuaSetSpriteY);
+    lua_register(L, "setSpriteTileIndex", LuaSetSpriteTileIndex);
+
+
 }
 
 
@@ -146,7 +226,7 @@ void closeLua()
 
 void execLuaVBLANK()
 {
-    lua_getglobal(L, "Vblank");
+    lua_getglobal(L, "vblank");
     if(lua_isfunction(L, -1))
         lua_call(L, 0, 0);
     else

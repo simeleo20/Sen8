@@ -19,3 +19,6 @@ osCgenerator: os.lua
 
 oslua.c: os.lua osCgenerator
 	osCgenerator
+
+fontGenerator: fontGenerator.c
+	$(CC) $(CFLAGS) -o fontGenerator fontGenerator.c $(LDFLAGS) $(LIBS)
