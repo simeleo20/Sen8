@@ -1,6 +1,6 @@
 function setup()
     print("setup")
-    bgSet(2,1,1)
+    --bgSet(2,1,1)
 end
 scrollx = 0
 

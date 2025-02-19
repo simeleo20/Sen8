@@ -182,6 +182,38 @@ int LuaSetSpriteTileIndex(lua_State *L)
     setSpriteTileIndex(index, tileIndex);
     return 0;
 }
+int luaSaveTiles(lua_State *L)
+{
+    saveTiles();
+    return 0;
+}
+int luaSaveSprites(lua_State *L)
+{
+    saveSprites();
+    return 0;
+}
+int luaLoadTilesData(lua_State *L)
+{
+    cstring filename = lua_tostring(L, -1);
+    const char* data = (const char*)loadTilesData(filename);
+    lua_newtable(L);
+    int i = 0;
+    for (int i = 0; i < 256 * 8 * 8; i++) {
+        lua_pushinteger(L, i + 1);
+        lua_pushinteger(L, data[i]);
+        lua_settable(L, -3);
+    }
+    return 1;
+}
+int luaPrintS(lua_State *L)
+{
+    int x = lua_tonumber(L, -4);
+    int y = lua_tonumber(L, -3);
+    u8 color = lua_tonumber(L, -2);
+    cstring str = lua_tostring(L, -1);
+    printS(x, y, color, str);
+    return 0; // number of results
+}
 void registerFunctions()
 {
     lua_register(L, "bgSet", luaBgSet);
@@ -201,8 +233,10 @@ void registerFunctions()
     lua_register(L, "setSpriteX", LuaSetSpriteX);
     lua_register(L, "setSpriteY", LuaSetSpriteY);
     lua_register(L, "setSpriteTileIndex", LuaSetSpriteTileIndex);
-
-
+    lua_register(L, "saveTiles", luaSaveTiles);
+    lua_register(L, "saveSprites", luaSaveSprites);
+    lua_register(L, "loadTilesData", luaLoadTilesData);
+    lua_register(L, "printS", luaPrintS);
 }
 
 

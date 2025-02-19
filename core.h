@@ -3,6 +3,7 @@
 
 #include "types.h"
 
+
 //buttons
 #define BUTTON_UP 0
 #define BUTTON_DOWN 1
@@ -105,11 +106,15 @@ void setSprite(u8 index, int x, int y, u8 tileIndex, bool flipH, bool flipV, boo
 void setSpriteX(u8 index, int x);
 void setSpriteY(u8 index, int y);
 void setSpriteTileIndex(u8 index, u8 tileIndex);
+void saveTiles();
+void saveSprites();
 
 void coreVBLANK();
 void coreLoop();
 void coreSetup();
 void closeScript();
 void cls();
-
+cstring loadTilesData(cstring filename);
+void loadTiles();
+void printS(int x, int y, u8 color,cstring s);
 #endif // CORE_H

@@ -1,14 +1,19 @@
 #include "types.h"
 #include "core.h"
 #include "lua.h"
-#include "raylib.h"
 #include <stdlib.h>
 #include "oslua.c"
+#include "raylib.h"
+
 
 
 //current core
 core cCore;
-void printSprites()
+//size 127*8
+char font[] = {
+#include "font.inl"
+};
+void printZbuffer()
 {
 
 }
@@ -64,7 +69,7 @@ void coreSetup()
 {
     free(cCore.ram.script);
     cCore.ram.script = fileToString("editor.lua");
-
+    loadTiles();
     //script = malloc(strlen(os) + 1);
     //strcpy(script, os);
     
@@ -136,9 +141,14 @@ void drawBackground()
     {
         for(int x = 0; x < 64; x++)
         {
-            drawTile(x, y, cCore.ram.bgTilesMem[cCore.ram.bgMap[y][x]], true, 0);
+            bool transp = true;
+            if(cCore.ram.bgMap[y][x] == 0) transp = false;
+            drawTile(x, y, cCore.ram.bgTilesMem[cCore.ram.bgMap[y][x]], transp, 0);
         }
     }
+    printS(0, 0, 7, "Hello World!");
+
+
 }
 
 void drawSprites()
@@ -265,10 +275,10 @@ void setTransparent(u8 color)
 
 void corePPUDraw()
 {
-    printSprites();
 
     drawBackground();
     drawSprites();
+    printZbuffer();
 }
 
 
@@ -346,6 +356,70 @@ void initScreen()
 
 }
 
+void saveTiles()
+{
+    SaveFileData("tiles.bin", cCore.ram.bgTilesMem, 256*8*8);
+}
+void saveSprites()
+{
+    SaveFileData("sprites.bin", cCore.ram.spritesTileMem, 256*8*8);
+}
 
+void saveTilesData(tile t[256], cstring filename)
+{
+    SaveFileData(filename, t, 256*8*8);
+}
+
+cstring loadTilesData(cstring filename)
+{
+    int fileSize;
+    cstring buffer = LoadFileData(filename, &fileSize);
+    string out = malloc(fileSize);
+    for(int i = 0; i < fileSize; i++)
+    {
+        out[i] = buffer[i];
+    }
+    UnloadFileData((unsigned char *)buffer);
+    return out;
+}
+
+void loadTiles()
+{
+    cstring buffer = loadTilesData("tiles.bin");
+    for(int i = 0; i < 256; i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            for(int k = 0; k < 8; k++)
+            {
+                cCore.ram.bgTilesMem[i][j][k] = buffer[i*8*8+j*8+k];
+            }
+        }
+    }
+    free((void *)buffer);
+}
+
+void printC(int x, int y, char c, u8 color)
+{
+    for(int y1 = 0; y1 < 8; y1++)
+    {
+        for(int x1 = 0; x1 < 8; x1++)
+        {
+            if(font[(int)c*8+y1] & (1 << x1))
+            {
+                pixelToScreen(x+x1, y+y1, color, 20);
+            }
+        }
+    }
+}
+void printS(int x, int y, u8 color,cstring s)
+{
+    int i = 0;
+    while(s[i] != '\0')
+    {
+        printC(x+i*6, y, s[i], color);
+        i++;
+    }
+}
 
 

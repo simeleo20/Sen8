@@ -9,6 +9,8 @@ extern core cCore;
 float newScreenWidth;
 float newScreenHeight;
 
+u8 previousScreen[240][256];
+
 void putPixel(u8 x, u8 y, u8 color)
 {
     DrawPixel(x, y, (Color){palette[color].r, palette[color].g, palette[color].b, 255});
@@ -20,7 +22,22 @@ void drawScreen()
     {
         for(int x = 0; x < 256; x++)
         {
-            putPixel(x, y, cCore.ram.screen[y][x]);
+            if(cCore.ram.screen[y][x] != previousScreen[y][x])
+            {
+                putPixel(x, y, cCore.ram.screen[y][x]);
+            }
+            previousScreen[y][x] = cCore.ram.screen[y][x];
+
+        }
+    }
+}
+void setupPreviousScreen()
+{
+    for(int y = 0; y < 240; y++)
+    {
+        for(int x = 0; x < 256; x++)
+        {
+            previousScreen[y][x] = -1;
         }
     }
 }
@@ -77,16 +94,17 @@ int getCharPressed()
 
 int main(void)
 {
+    
     initScreen();
     SetTargetFPS(60);
-    InitWindow(256, 240, "raylib [shapes] example - raylib logo using shapes");
+    InitWindow(256, 240, "Fantasy Console");
     // This should use the flag FLAG_FULLSCREEN_MODE which results in a possible ToggleFullscreen() call later on
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetExitKey(0);
     // Request a texture to render to. The size is the screen size of the raylib example.
     RenderTexture2D renderTexture = LoadRenderTexture(screenWidth, screenHeight);
     coreSetup();
-
+    setupPreviousScreen();
     while (!WindowShouldClose())
     {
         
@@ -94,7 +112,7 @@ int main(void)
 
         // Instead of using BeginDrawing() we render to the render texture. Everything else stays unchanged
         BeginTextureMode(renderTexture);
-        ClearBackground(RAYWHITE);
+        //ClearBackground(RAYWHITE);
         drawScreen();
         
         // We need to end the texture mode separately

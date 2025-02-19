@@ -9,22 +9,31 @@ tile = {
     {7,7,7,7,7,7,7,7}
 }
 
-tiles ={};
+tilesInDrawing ={}
+spritesInDrawing = {}
 
 selectedColor = 0
 selectedTile = 1
 
+
 function setup()
 
     setTransparent(16)
-
-    fillTile(2)
-    bgTileLoad(0,tile)
+    --fillTile(0)
+    --bgTileLoad(0,tile)
     loadSprites()
+    setupTilesInDrawing()
 
-    fillTile(0)
+    loadTilesBin()
+    tileInDrawingToTile(selectedTile)
+    
+
+
+
+    
     
     drawTilesDisplay(0,21,0)
+
 
 end
 
@@ -32,8 +41,12 @@ function loop()
     
     detectMouseDraw(4,4)
     detectColorSelect(14,3)
+    detectTileSelect(0,21)
     if(btn(4) == 1) then
         printTile()
+    end
+    if(btn(1) == 1) then
+        saveTiles()
     end
     
 end
@@ -46,6 +59,7 @@ function vblank()
     drawBigTile(4,4)
     drawBigColors(14,3)
     drawHorizontalLine(0,29,32,8)
+    printS(2,233,7,"x:"..math.floor(getMouseX()).." y:"..math.floor(getMouseY()));
 
 end
 
@@ -123,6 +137,20 @@ function drawTilesDisplay(x,y,index)
         end
     end
 end
+function detectTileSelect(x,y)
+    local mouseX = math.floor(getMouseX()/8)
+    local mouseY = math.floor(getMouseY()/8)
+    
+    if mouseX >= x and mouseX < x+32 and mouseY >= y and mouseY < y+8 then
+        if btn(6) == 1 then
+            tileToTilesInDrawing(selectedTile)
+            selectedTile = (mouseY-y)*32 + (mouseX-x)
+            tileInDrawingToTile(selectedTile)
+            moveSelector2(mouseX,mouseY)
+            --print(selectedTile)
+        end
+    end
+end
 
 function printTile()
     for i=1,8 do
@@ -164,8 +192,20 @@ function loadSprites()
     loadInTile({0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 16, 16, 16, 16, 16, 0, 0, 16, 16, 16, 16, 16, 16, 0, 0, 16, 16, 16, 16, 16, 16, 0, 0, 16, 16, 16, 16, 16, 16, 0, 0, 16, 16, 16, 16, 16, 16, 0, 0, 16, 16, 16, 16, 16, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0})
     spriteTileLoad(5,tile)
     setSpriteTileIndex(5,5)
+
+    -- under score 6
+    setSpriteTileIndex(6,1)
+    -- upper score 7
+    setSpriteTileIndex(7,2)
+    -- right score 8
+    setSpriteTileIndex(8,3)
+    -- left score 9
+    setSpriteTileIndex(9,4)
+    -- square 10
+    setSpriteTileIndex(10,5)
+
 end
-function moveSelector(x,y,index)
+function moveSelector(x,y)
     x = x*8
     y = y*8
     -- under score 1
@@ -185,6 +225,22 @@ function moveSelector(x,y,index)
     setSpriteY(5,y)
 
 end
+function moveSelector2(x,y)
+    x = x*8
+    y = y*8
+    -- under score 1
+    setSpriteX(6,x)
+    setSpriteY(6,y-8)
+    -- upper score 2
+    setSpriteX(7,x)
+    setSpriteY(7,y+8)
+    -- right score 3
+    setSpriteX(8,x-8)
+    setSpriteY(8,y)
+    -- left score 4
+    setSpriteX(9,x+8)
+    setSpriteY(9,y)
+end
 
 function loadInTile(data)
     for i=1,8 do
@@ -193,3 +249,58 @@ function loadInTile(data)
         end
     end
 end
+
+function tileToTilesInDrawing(index)
+    for y=0,7 do
+        for x=0,7 do
+            tilesInDrawing[index+1][y+1][x+1] = tile[y+1][x+1]
+        end
+    end
+end
+
+function tileInDrawingToTile(index)
+    for y=0,7 do
+        for x=0,7 do
+            tile[y+1][x+1] = tilesInDrawing[index+1][y+1][x+1]
+        end
+    end
+end
+
+function setupTilesInDrawing()
+    for i=1,255 do
+        tilesInDrawing[i] = {}
+        for j=1,8 do
+            tilesInDrawing[i][j] = {}
+            for k=1,8 do
+                tilesInDrawing[i][j][k] = 0
+            end
+        end
+    end
+end
+
+function loadTilesBin()
+    bin = loadTilesData("tiles.bin")
+    local counter = 1
+    for i=1,255 do
+        for j=1,8 do
+            for k=1,8 do
+                tilesInDrawing[i][j][k] = bin[(i-1)*64+(j-1)*8+k]
+                counter = counter + 1
+            end
+        end
+    end
+end
+
+
+-- <TILES>
+-- 001: 1111111111110111111100111111010111110111100001110000011110001111
+-- 002: 1111111111110111111100111111010111110111100001110000011110001111
+
+
+--</TILES>
+
+--<SPRITES>
+
+
+
+--</SPRITES>
