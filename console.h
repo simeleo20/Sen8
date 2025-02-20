@@ -7,7 +7,7 @@
 
 typedef struct
 {
-#define maxConsoleLines 30
+#define maxConsoleLines 60
 #define maxConsoleChars 32
     char lines[maxConsoleLines][maxConsoleChars + 1];
     u16 bottomPtr;
@@ -20,7 +20,15 @@ typedef struct charNode
     struct charNode *next;
 } charNode;
 
+typedef struct
+{
+    charNode *head;
+    int cursor;
+} writing;
+
+
 
 void print(cstring str);
+void consoleLoop();
 
 #endif // CONSOLE_H

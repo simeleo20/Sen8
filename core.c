@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "oslua.c"
 #include "raylib.h"
+#include "os.h"
 
 
 
@@ -40,11 +41,13 @@ const rgb palette[16] = {
 void coreVBLANK()
 {
     cls();
-    cCore.vblank(&cCore);
+    if(cCore.vblank != NULL)
+        cCore.vblank(&cCore);
 }
 void coreLoop()
 {
-    cCore.loop(&cCore);
+    if(cCore.loop != NULL)
+        cCore.loop(&cCore);
 }
 string fileToString(cstring filename)
 {
@@ -61,24 +64,23 @@ string fileToString(cstring filename)
 }
 void coreSetup()
 {
-
+    /*
     free(cCore.ram.script);
     cCore.ram.script = fileToString("editor.lua");
     loadTiles();
-    //script = malloc(strlen(os) + 1);
-    //strcpy(script, os);
-    
-    
-    
-    
     initLua(&cCore);
+    */
     
-    cCore.setup(&cCore);
+
+    
+    if(cCore.setup != NULL)
+        cCore.setup(&cCore);
     
 }
 void closeScript()
 {
-    cCore.close(&cCore);
+    if(cCore.close != NULL)
+        cCore.close(&cCore);
     
 }
 
@@ -140,9 +142,6 @@ void drawBackground()
             drawTile(x, y, cCore.ram.bgTilesMem[cCore.ram.bgMap[y][x]], transp, 0);
         }
     }
-    printS(0, 0, 7, "Hello World!");
-
-
 }
 
 void drawSprites()

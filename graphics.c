@@ -107,7 +107,7 @@ int main(void)
     setupPreviousScreen();
     while (!WindowShouldClose())
     {
-        
+        osLoop();
         corePPUDraw();
 
         // Instead of using BeginDrawing() we render to the render texture. Everything else stays unchanged
@@ -147,7 +147,7 @@ int main(void)
         
 
         //printf("Width: %d, Height: %d\n", GetScreenWidth(), GetScreenHeight());
-        Vector2 mousePosition = calcMousePosition();
+        //Vector2 mousePosition = calcMousePosition();
         //printf("Mouse Position: [%f, %f]\n", mousePosition.x, mousePosition.y);
     }
 

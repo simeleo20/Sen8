@@ -3,18 +3,16 @@
 #include <conio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+#include "core.h"
 
 printMem prints;
 charNode *head;
 int cursor = 0;
 
-void drawPrints()
-{
-    for(int i = 0; i < maxConsoleLines; i++)
-    {
-        printf("%d: %s\n", i,prints.lines[i]);
-    }
-}
+
 
 charNode* newCharNode(char c)
 {
@@ -119,53 +117,68 @@ cstring charNodesToString(charNode *head)
     str[i] = '\0';
     return str;
 }
-
-int main()
+int arrIInside(int i, int size)
 {
-    while(true)
+    while (i<0)
     {
-        char c = getch();
-        if(c=='a')
-        {
-            cursor--;
-            if(cursor < 0) cursor = 0;
-            continue;
-        }
-        else if(c=='d')
-        {
-            cursor++;
-            continue;
-        }
-        else if(c=='w')
-        {
-            if(cursor == 0) continue;
-            head = deleteCharNode(head, cursor-1);
-            cursor--;
-            printCharNodes(head);
-            continue;
-        }
-        else if(c==3)
-        {
-            break;
-        }
-        else if(c=='s')
-        {
-            head=deleteAllCharNodes(head);
-            cursor = 0;
-            printCharNodes(head);
-            continue;
-        }
-        head = insertCharNode(head, cursor, c);
-        cursor++;
-        printCharNodes(head);
+        i += size;
     }
+    while (i>=size)
+    {
+        i -= size;
+    }
+     
+    return i;
+}
 
-    return 0;
+void drawPrints()
+{
+    int start = arrIInside(prints.bottomPtr - 32,maxConsoleLines);
+    while(prints.lines[start][0]=='\0' && prints.bottomPtr!= start)
+    {
+        start = arrIInside(start+1,maxConsoleLines);
+    }
+    for(int i = 0; i < 33; i++)
+    {
+        printS(0,2+ i*7, 7, prints.lines[start]);
+        start = arrIInside(start+1,maxConsoleLines);
+    }
+}
+int i =0 ;
+
+void conSetup()
+{
+    if(i==0)
+    {
+        //print("0\n>1\n>2\n>3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34");
+
+        i++;
+        
+    }
+    
+}
+
+void detectWrite()
+{
+    int key =  GetKeyPressed();
+
+    char c = GetCharPressed();
+    if(c== 0) return;
+    char str[2] = {c,'\0'};
+    //print(str);
+}
+
+void consoleLoop()
+{
+    conSetup();
+    detectWrite();
+    drawPrints();
 }
 
 void print(cstring str)
 {
     int i = 0;
+    char lastChar = '\0';
     while(str[i] != '\0')
     {
         if(prints.bottomXPtr >= maxConsoleChars) 
@@ -175,12 +188,13 @@ void print(cstring str)
             prints.bottomXPtr = 0;
         }
         if(prints.bottomPtr >= maxConsoleLines) prints.bottomPtr = 0;
-
+        lastChar = str[i];
         if(str[i]=='\n')
         {
             i++;
             prints.bottomXPtr = 0;
             prints.bottomPtr +=1;
+            prints.lines[prints.bottomPtr][prints.bottomXPtr] = '\n';
             continue;
         }
 
@@ -188,6 +202,13 @@ void print(cstring str)
         prints.bottomXPtr +=1;
         i++;
     }
-    prints.lines[prints.bottomPtr][prints.bottomXPtr] = '\0';
+    if(lastChar == '\n')
+    {
+        prints.lines[prints.bottomPtr][prints.bottomXPtr] = '\n';
+        prints.lines[prints.bottomPtr][prints.bottomXPtr+1] = '\0';
+    }
+    else{
+        prints.lines[prints.bottomPtr][prints.bottomXPtr] = '\0';
+    }
 }
 
