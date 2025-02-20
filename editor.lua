@@ -22,6 +22,8 @@ function setup()
     --fillTile(0)
     --bgTileLoad(0,tile)
     loadSprites()
+    moveSelector(14,3)
+    moveSelector2(1,21)
     setupTilesInDrawing()
 
     loadTilesBin()
@@ -59,6 +61,7 @@ function vblank()
     drawBigTile(4,4)
     drawBigColors(14,3)
     drawHorizontalLine(0,29,32,8)
+    drawHorizontalLine(0,0,32,8)
     printS(2,233,7,"x:"..math.floor(getMouseX()).." y:"..math.floor(getMouseY()));
 
 end
@@ -147,7 +150,7 @@ function detectTileSelect(x,y)
             selectedTile = (mouseY-y)*32 + (mouseX-x)
             tileInDrawingToTile(selectedTile)
             moveSelector2(mouseX,mouseY)
-            --print(selectedTile)
+            print(selectedTile)
         end
     end
 end
@@ -267,7 +270,7 @@ function tileInDrawingToTile(index)
 end
 
 function setupTilesInDrawing()
-    for i=1,255 do
+    for i=1,256 do
         tilesInDrawing[i] = {}
         for j=1,8 do
             tilesInDrawing[i][j] = {}
@@ -281,7 +284,7 @@ end
 function loadTilesBin()
     bin = loadTilesData("tiles.bin")
     local counter = 1
-    for i=1,255 do
+    for i=1,256 do
         for j=1,8 do
             for k=1,8 do
                 tilesInDrawing[i][j][k] = bin[(i-1)*64+(j-1)*8+k]

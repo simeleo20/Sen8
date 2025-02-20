@@ -40,17 +40,11 @@ const rgb palette[16] = {
 void coreVBLANK()
 {
     cls();
-    if(cCore.ram.language == LUA)
-    {
-        execLuaVBLANK();
-    }
+    cCore.vblank(&cCore);
 }
 void coreLoop()
 {
-    if(cCore.ram.language == LUA)
-    {
-        execLuaLoop();
-    }
+    cCore.loop(&cCore);
 }
 string fileToString(cstring filename)
 {
@@ -67,6 +61,7 @@ string fileToString(cstring filename)
 }
 void coreSetup()
 {
+
     free(cCore.ram.script);
     cCore.ram.script = fileToString("editor.lua");
     loadTiles();
@@ -74,18 +69,17 @@ void coreSetup()
     //strcpy(script, os);
     
     
-    if(cCore.ram.language == LUA)
-    {
-        initLua(cCore.ram.script);
-        execLuaSetup();
-    }
+    
+    
+    initLua(&cCore);
+    
+    cCore.setup(&cCore);
+    
 }
 void closeScript()
 {
-    if(cCore.ram.language == LUA)
-    {
-        closeLua();
-    }
+    cCore.close(&cCore);
+    
 }
 
 

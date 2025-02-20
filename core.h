@@ -2,7 +2,7 @@
 #define CORE_H
 
 #include "types.h"
-
+#include <lua.h>
 
 //buttons
 #define BUTTON_UP 0
@@ -82,10 +82,24 @@ typedef struct {
     };
 } mem;
 
+//vm
+typedef struct vm {
+    union {
+        lua_State *L;
+        // Add other VM types here in the future
+    };
+} vm;
+
 // ram
 //
 typedef struct {
     mem ram;
+    vm vm;
+    void (*vblank)();
+    void (*loop)();
+    void (*setup)();
+    void (*close)();
+
 } core;
 
 typedef enum languageE { LUA, PYTHON, JS } languageE;

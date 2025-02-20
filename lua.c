@@ -5,7 +5,9 @@
 #include "core.h"
 #include "graphics.h"
 
-lua_State *L;
+
+
+
 
 
 int luaBgSet(lua_State *L)
@@ -133,7 +135,7 @@ int luaSpriteTileLoad(lua_State *L)
 
     return 0; // number of results
 }
-int luaDrawFilled()
+int luaDrawFilled(lua_State *L)
 {
     int x = lua_tonumber(L, -3);
     int y = lua_tonumber(L, -2);
@@ -214,7 +216,7 @@ int luaPrintS(lua_State *L)
     printS(x, y, color, str);
     return 0; // number of results
 }
-void registerFunctions()
+void registerFunctions(lua_State *L)
 {
     lua_register(L, "bgSet", luaBgSet);
     lua_register(L, "bgGet", luaBgGet);
@@ -241,54 +243,60 @@ void registerFunctions()
 
 
 
-void initLua(string script)
+
+void initLua(core *cCore)
 {
-    L = luaL_newstate();
-    luaL_openlibs(L);
-    registerFunctions();
-    if (luaL_dostring(L, script) != LUA_OK) {
-        fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
-        lua_pop(L, 1);
+    cCore->vm.L = luaL_newstate();
+    luaL_openlibs(cCore->vm.L);
+    registerFunctions(cCore->vm.L);
+    if (luaL_dostring(cCore->vm.L, cCore->ram.script) != LUA_OK) {
+        fprintf(stderr, "Error: %s\n", lua_tostring(cCore->vm.L, -1));
+        lua_pop(cCore->vm.L, 1);
     }
-
+    cCore->setup = execLuaSetup;
+    cCore->loop = execLuaLoop;
+    cCore->vblank = execLuaVBLANK;
+    cCore->close = closeLua;
 }
-void closeLua()
+void closeLua(core *cCore)
 {
-    lua_close(L);
+    lua_close(cCore->vm.L);
 }
 
 
-void execLuaVBLANK()
+void execLuaVBLANK(core *cCore)
 {
-    lua_getglobal(L, "vblank");
-    if(lua_isfunction(L, -1))
-        lua_call(L, 0, 0);
+    lua_getglobal(cCore->vm.L, "vblank");
+    if(lua_isfunction(cCore->vm.L, -1))
+        lua_call(cCore->vm.L, 0, 0);
     else
     {
-        lua_pop(L, 1);
+        lua_pop(cCore->vm.L, 1);
         //printf("Vblank not found!!!\n");
     }
 }
-void execLuaLoop()
+void execLuaLoop(core *cCore)
 {
-    lua_getglobal(L, "loop");
-    if(lua_isfunction(L, -1))
-        lua_call(L, 0, 0);
+    lua_getglobal(cCore->vm.L, "loop");
+    if(lua_isfunction(cCore->vm.L, -1))
+        lua_call(cCore->vm.L, 0, 0);
     else
     {
-        lua_pop(L, 1);
+        lua_pop(cCore->vm.L, 1);
         printf("Loop not found!!!\n");
     }
 }
-void execLuaSetup()
+void execLuaSetup(core *cCore)
 {
-    lua_getglobal(L, "setup");
-    if(lua_isfunction(L, -1))
-        lua_call(L, 0, 0);
+
+    lua_getglobal(cCore->vm.L, "setup");
+    if(lua_isfunction(cCore->vm.L, -1))
+        lua_call(cCore->vm.L, 0, 0);
     else
     {
-        lua_pop(L, 1);
+        lua_pop(cCore->vm.L, 1);
         printf("Setup not found!!!\n");
     }
+
 }
 

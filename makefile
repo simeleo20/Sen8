@@ -22,3 +22,7 @@ oslua.c: os.lua osCgenerator
 
 fontGenerator: fontGenerator.c
 	$(CC) $(CFLAGS) -o fontGenerator fontGenerator.c $(LDFLAGS) $(LIBS)
+
+console: console.c
+	$(CC) $(CFLAGS) -o console console.c $(LDFLAGS) $(LIBS)
+	console

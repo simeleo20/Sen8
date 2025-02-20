@@ -2,11 +2,13 @@
 #define LUA_H
 
 #include "types.h"
+#include "core.h"
 
-void initLua(string script);
-void closeLua();
-void execLuaVBLANK();
-void execLuaLoop();
-void execLuaSetup();
+void initLua(core *cCore);
+void closeLua(core *cCore);
+void execLuaVBLANK(core *cCore);
+void execLuaLoop(core *cCore);
+void execLuaSetup(core *cCore);
+
 
 #endif // LUA_H
