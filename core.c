@@ -163,7 +163,16 @@ void drawFilled(int x, int y, u8 color)
         }
     }
 }
-
+void drawRectFilled(int x, int y, int w, int h, u8 color, u8 z)
+{
+    for(int y1 = 0; y1 < h; y1++)
+    {
+        for(int x1 = 0; x1 < w; x1++)
+        {
+            pixelToScreen(x+x1, y+y1, color,z);
+        }
+    }
+}
 
 void bgSet(u16 x, u16 y, u8 tileIndex)
 {

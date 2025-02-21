@@ -26,9 +26,17 @@ typedef struct
     int cursor;
 } writing;
 
+typedef struct 
+{
+    cstring keyWord;
+    int (*exec)(cstring);
+}command;
 
 
 void print(cstring str);
 void consoleLoop();
+
+int execLs(cstring str);
+int execCd(cstring str);
 
 #endif // CONSOLE_H

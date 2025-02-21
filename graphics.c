@@ -128,10 +128,10 @@ int main(void)
             newScreenWidth = trywidth;
             newScreenHeight = GetScreenHeight();
         }
-
-
+        
         // Let's draw the texture. The source rect is the size of the texture, the destination rect is of the same size as the screen. For some reason, the texture was flipped vertically, so I had to invert the source rects "height" to flip the UV.
         BeginDrawing();
+        
         DrawTexturePro(
             renderTexture.texture,
             (Rectangle){ 0, 0, (float)renderTexture.texture.width, (float)-renderTexture.texture.height },
@@ -140,6 +140,8 @@ int main(void)
             0,
             WHITE);
         EndDrawing();
+        
+
         coreLoop();
         
         // VBLANK

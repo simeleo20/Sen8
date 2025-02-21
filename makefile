@@ -4,7 +4,7 @@ LDFLAGS = -L"C:/raylib/raylib/src" -L"C:\Program Files\Lua" -llua54
 LIBS = -lraylib -lopengl32 -lgdi32 -lwinmm
 
 graphics: graphics.c lua.c os.lua oslua.c console.c os.c
-	$(CC) $(CFLAGS) -o graphics graphics.c lua.c console.c os.c  $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) -o graphics graphics.c lua.c console.c os.c -g $(LDFLAGS) $(LIBS)
 	graphics
 
 lua: lua.c

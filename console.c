@@ -9,10 +9,16 @@
 #include "core.h"
 
 printMem prints;
+int endTextYAbs = 0;
 charNode *head;
 int cursor = 0;
 
 
+command commands[] = {
+    {"ls", execLs},
+    {"cd", execCd}
+};
+#define commandsSize (sizeof(commands)/sizeof(command))
 
 charNode* newCharNode(char c)
 {
@@ -100,6 +106,7 @@ u16 countCharNodes(charNode *head)
         i++;
         current = current->next;
     }
+    return i;
 }
 
 cstring charNodesToString(charNode *head)
@@ -133,16 +140,14 @@ int arrIInside(int i, int size)
 
 void drawPrints()
 {
-    int start = arrIInside(prints.bottomPtr - 32,maxConsoleLines);
-    while(prints.lines[start][0]=='\0' && prints.bottomPtr!= start)
-    {
-        start = arrIInside(start+1,maxConsoleLines);
-    }
-    for(int i = 0; i < 33; i++)
+    int start = prints.bottomPtr;
+    //printf("end text %d\n", endTextYAbs);
+    for(int i = ((endTextYAbs < 33)? endTextYAbs : 33 ); i >= 0; i--)
     {
         printS(0,2+ i*7, 7, prints.lines[start]);
-        start = arrIInside(start+1,maxConsoleLines);
+        start = arrIInside(start-1,maxConsoleLines);
     }
+    
 }
 int i =0 ;
 
@@ -150,41 +155,183 @@ void conSetup()
 {
     if(i==0)
     {
-        //print("0\n>1\n>2\n>3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34");
-
+        //print("0\n>1\n>2\n>3\n4\n5\n6\n7\n");
         i++;
         
     }
     
 }
 
+void drawInWriting()
+{
+    static int countWrite = 0;
+    static int lastCursor = 0;
+    if(lastCursor != cursor)
+    {
+        countWrite = 0;
+    }
+    cstring str = charNodesToString(head);
+    int endTextRel = ((endTextYAbs < 33)? endTextYAbs : 33 );
+    printS(0, 2+endTextRel*7, 7, ">");
+    printS(6, 2+endTextRel*7, 7, str);
+    if(countWrite % 40 < 20)
+    {
+        drawRectFilled(5+cursor*6, 1+endTextRel*7, 7, 7, 7, 10);
+        printC(6+cursor*6, 2+endTextRel*7, str[cursor], 0);
+    }
+    free(str);
+    lastCursor = cursor;
+    countWrite++;
+}
+
+int execLs(cstring str)
+{
+    print("\n");
+    FilePathList list = LoadDirectoryFiles(".");
+    for(int i = 0; i < list.count; i++)
+    {
+        bool isFile = IsPathFile(list.paths[i]);
+        print("- ");
+        if(!isFile) print("[");
+        
+        print(GetFileName(list.paths[i]));
+        if(!isFile) print("]");
+        print("\n");
+    }
+    UnloadDirectoryFiles(list);
+    print("\n");
+    return 1;
+}
+int execCd(cstring str)
+{
+    int i = 3;
+    while(str[i]==' ' && str[i]!='\0')
+    {
+        i++;
+    }
+    strcpy(str, str+i);
+    if(ChangeDirectory(str))
+    {
+        return 1;
+    }
+    else
+    {
+        print("Directory not found\n");
+        return -1;
+    }
+    
+}
+
+int tryExecCode(cstring str)
+{
+    u16 strSize = strlen(str);
+    for(int i = 0; i < commandsSize; i++)
+    {
+        u8 keywordSize = strlen(commands[i].keyWord);
+        for(int j = 0; j < keywordSize; j++)
+        {
+            if(j == strSize) break;
+            if(str[j] != commands[i].keyWord[j]) break;
+            if(j == keywordSize-1)
+            {
+                return commands[i].exec(str);
+            }
+        }
+    }
+    return 0;
+}
+
 void detectWrite()
 {
     int key =  GetKeyPressed();
+    if(key == 257)
+    {
+        cstring str = charNodesToString(head);
+        print(">");
+        print(str);
+        print("\n");
+        if(str[0] == '\0')
+        {
+            free(str);
+            return;
+        }
+        head = deleteAllCharNodes(head);
+        cursor = 0;
+        //endTextYAbs += 1;
+        if(!tryExecCode(str))
+        {
+            print("Command not found\n");
+        }
+        free(str);
+        return;
+    }
+    else if(key == KEY_LEFT)
+    {
+        cursor--;
+        if(cursor < 0) cursor = 0;
+        return;
+    }
+    else if(key == KEY_RIGHT)
+    {
+        u16 size = countCharNodes(head);
+        cursor++;
+        if(cursor > size) cursor = size;
+        return;
+    }
+    else if(key == KEY_BACKSPACE)
+    {
+        head = deleteCharNode(head, cursor-1);
+        cursor--;
+        if(cursor < 0) cursor = 0;
+        return;
+    }
+    else if(key == KEY_DELETE)
+    {
+        head = deleteCharNode(head, cursor);
+        return;
+    }
+    else if(key == KEY_HOME)
+    {
+        cursor = 0;
+        return;
+    }
+    else if(key == KEY_END)
+    {
+        cursor = countCharNodes(head);
+        return;
+    }
 
-    char c = GetCharPressed();
+    unsigned char c = GetCharPressed();
+    if(c>127) return;
     if(c== 0) return;
-    char str[2] = {c,'\0'};
-    //print(str);
+    head = insertCharNode(head, cursor, c);
+    cursor++;
+    
 }
+
+
 
 void consoleLoop()
 {
     conSetup();
     detectWrite();
     drawPrints();
+    drawInWriting();
 }
 
 void print(cstring str)
 {
+    printf(str);
     int i = 0;
     char lastChar = '\0';
+
     while(str[i] != '\0')
     {
         if(prints.bottomXPtr >= maxConsoleChars) 
         {
             prints.lines[prints.bottomPtr][prints.bottomXPtr] = '\0';
             prints.bottomPtr += 1;
+            endTextYAbs += 1;
             prints.bottomXPtr = 0;
         }
         if(prints.bottomPtr >= maxConsoleLines) prints.bottomPtr = 0;
@@ -194,6 +341,8 @@ void print(cstring str)
             i++;
             prints.bottomXPtr = 0;
             prints.bottomPtr +=1;
+            if(prints.bottomPtr >= maxConsoleLines) prints.bottomPtr = 0;
+            endTextYAbs += 1;
             prints.lines[prints.bottomPtr][prints.bottomXPtr] = '\n';
             continue;
         }
@@ -206,6 +355,7 @@ void print(cstring str)
     {
         prints.lines[prints.bottomPtr][prints.bottomXPtr] = '\n';
         prints.lines[prints.bottomPtr][prints.bottomXPtr+1] = '\0';
+        
     }
     else{
         prints.lines[prints.bottomPtr][prints.bottomXPtr] = '\0';

@@ -15,6 +15,9 @@
     "span": "c",
     "string.h": "c",
     "stdlib.h": "c",
-    "lualib.h": "c"
+    "lualib.h": "c",
+    "*.tcc": "c",
+    "ostream": "c",
+    "*.lua": "c"
   }
 }
