@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "core.c"
 #include "graphics.h"
+#include "customLog.h"
 
 int screenWidth = 256;
 int screenHeight = 240;
@@ -97,10 +98,11 @@ int main(void)
     
     initScreen();
     SetTargetFPS(60);
+    SetTraceLogCallback(CustomLog);
     InitWindow(256, 240, "Fantasy Console");
     // This should use the flag FLAG_FULLSCREEN_MODE which results in a possible ToggleFullscreen() call later on
     SetWindowState(FLAG_WINDOW_RESIZABLE);
-    SetExitKey(0);
+    SetExitKey(KEY_F1);
     // Request a texture to render to. The size is the screen size of the raylib example.
     RenderTexture2D renderTexture = LoadRenderTexture(screenWidth, screenHeight);
     coreSetup();
@@ -156,7 +158,7 @@ int main(void)
     // Unload the texture handle again to make a clean exit.
     UnloadRenderTexture(renderTexture);
 
-    closeScript();
+    coreClose();
 
     CloseWindow();
 

@@ -18,6 +18,10 @@
     "lualib.h": "c",
     "*.tcc": "c",
     "ostream": "c",
-    "*.lua": "c"
+    "*.lua": "c",
+    "fcntl.h": "c",
+    "raylib.h": "c",
+    "newprintf.h": "c",
+    "cstdio": "c"
   }
 }

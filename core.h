@@ -95,6 +95,7 @@ typedef struct vm {
 typedef struct {
     mem ram;
     vm vm;
+    bool running;
     void (*vblank)();
     void (*loop)();
     void (*setup)();
@@ -127,10 +128,11 @@ void saveSprites();
 void coreVBLANK();
 void coreLoop();
 void coreSetup();
-void closeScript();
+void coreClose();
 void cls();
 cstring loadTilesData(cstring filename);
 void loadTiles();
+int loadSenString(cstring fileChars);
 void printS(int x, int y, u8 color,cstring s);
 void printC(int x, int y, char c, u8 color);
 #endif // CORE_H

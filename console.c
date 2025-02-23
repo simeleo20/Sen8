@@ -7,16 +7,52 @@
 #include <lualib.h>
 #include <lauxlib.h>
 #include "core.h"
+#include <unistd.h>
 
 printMem prints;
 int endTextYAbs = 0;
 charNode *head;
 int cursor = 0;
 
+#ifdef _WIN32
+    #define getUserFolder getenv("APPDATA")
+    #define slash "\\"
+#elif __linux__
+    #define getUserFolder getenv("HOME")
+    #define slash "/"
+#elif __APPLE__
+    #define getUserFolder getenv("HOME")
+    #define slash "/"
+#elif __ANDROID__
+    #define getUserFolder getenv("HOME")
+    #define slash "/"
+#elif PLATFORM_WEB
+    #define getUserFolder "/"
+    #define slash "/"
+#endif
+
+#define appFolderName "Sen8"
+
+char* getBaseFolder() {
+    char* baseFolder = malloc(strlen(getUserFolder) + strlen(slash appFolderName) + 1);
+    if (baseFolder) {
+        strcpy(baseFolder, getUserFolder);
+        strcat(baseFolder, slash appFolderName);
+    }
+    return baseFolder;
+}
+
+
+cstring baseFolder;
+cstring localPath = "";
+
+
 
 command commands[] = {
     {"ls", execLs},
-    {"cd", execCd}
+    {"cd", execCd},
+    {"mk", execMk},
+    {"load", execLoad}
 };
 #define commandsSize (sizeof(commands)/sizeof(command))
 
@@ -155,7 +191,34 @@ void conSetup()
 {
     if(i==0)
     {
-        //print("0\n>1\n>2\n>3\n4\n5\n6\n7\n");
+        baseFolder = getBaseFolder();
+        print(">");
+        printf(GetWorkingDirectory());
+        printf("\n");
+        printf(getUserFolder);
+        if(ChangeDirectory(getUserFolder))
+        {
+            printf("Directory changed\n");
+        }
+        else
+        {
+            printf("Directory not found\n");
+        }
+        if(DirectoryExists(appFolderName))
+        {
+            printf("Directory exists\n");
+        }
+        else
+        {
+            printf("Directory not found\n");
+            printf("Creating directory\n");
+            MakeDirectory(appFolderName);
+            printf("base folder: %s\n", baseFolder);
+            
+        }
+        ChangeDirectory(appFolderName);
+        printf("working directory: %s\n", GetWorkingDirectory());
+
         i++;
         
     }
@@ -172,12 +235,13 @@ void drawInWriting()
     }
     cstring str = charNodesToString(head);
     int endTextRel = ((endTextYAbs < 33)? endTextYAbs : 33 );
-    printS(0, 2+endTextRel*7, 7, ">");
-    printS(6, 2+endTextRel*7, 7, str);
+    int localPathLen = strlen(localPath);
+    printS((localPathLen*6)+6, 2+endTextRel*7, 7, str);
     if(countWrite % 40 < 20)
     {
-        drawRectFilled(5+cursor*6, 1+endTextRel*7, 7, 7, 7, 10);
-        printC(6+cursor*6, 2+endTextRel*7, str[cursor], 0);
+        
+        drawRectFilled((localPathLen*6)+5+cursor*6, 1+endTextRel*7, 7, 7, 7, 10);
+        printC((localPathLen*6)+6+cursor*6, 2+endTextRel*7, str[cursor], 0);
     }
     free(str);
     lastCursor = cursor;
@@ -210,14 +274,71 @@ int execCd(cstring str)
         i++;
     }
     strcpy(str, str+i);
+    
     if(ChangeDirectory(str))
     {
+
+        if(memcmp(GetWorkingDirectory(), baseFolder, strlen(baseFolder)) != 0)
+        {
+            ChangeDirectory(baseFolder);
+            return 1;
+        }
+
+        
+
         return 1;
     }
     else
     {
         print("Directory not found\n");
         return -1;
+    }
+    
+}
+int execMk(cstring str)
+{
+    int i = 3;
+    while(str[i]==' ' && str[i]!='\0')
+    {
+        i++;
+    }
+    strcpy(str, str+i);
+    if(MakeDirectory(str))
+    {
+        print("Directory not created\n");
+        return -1;
+    }
+    else
+    {
+        
+        print("Directory created\n");
+        return 1;
+    }
+}
+
+int execLoad(cstring str)
+{
+    int i = 5;
+    while(str[i]==' ' && str[i]!='\0')
+    {
+        i++;
+    }
+    strcpy(str, str+i);
+
+    
+
+    cstring fileChars = LoadFileText(str);
+    if(fileChars == NULL)
+    {
+        print("File not found\n");
+        return -1;
+    }
+
+    cstring ext = GetFileExtension(str);
+    if(strcmp(ext, ".sen") == 0)
+    {
+        print("loaded sen file\n");
+        loadSenString(fileChars);
     }
     
 }
@@ -243,16 +364,17 @@ int tryExecCode(cstring str)
 
 void detectWrite()
 {
-    int key =  GetKeyPressed();
-    if(key == 257)
+    if(IsKeyPressed(257) || IsKeyPressedRepeat(257))
     {
         cstring str = charNodesToString(head);
-        print(">");
+        
         print(str);
         print("\n");
+        
         if(str[0] == '\0')
         {
             free(str);
+            print(">");
             return;
         }
         head = deleteAllCharNodes(head);
@@ -260,42 +382,54 @@ void detectWrite()
         //endTextYAbs += 1;
         if(!tryExecCode(str))
         {
-            print("Command not found\n");
+            print("Command not found \n");
         }
         free(str);
+        if(strlen(GetWorkingDirectory())> strlen(baseFolder))
+        {
+            localPath = malloc(strlen(GetWorkingDirectory()) - strlen(baseFolder) + 1);
+            strcpy(localPath, GetWorkingDirectory() + strlen(baseFolder)+1);
+            print(localPath);
+        }
+        else
+        {
+            localPath = "";
+        }
+        print(">");
+        
         return;
     }
-    else if(key == KEY_LEFT)
+    else if(IsKeyPressed(KEY_LEFT) || IsKeyPressedRepeat(KEY_LEFT))
     {
         cursor--;
         if(cursor < 0) cursor = 0;
         return;
     }
-    else if(key == KEY_RIGHT)
+    else if(IsKeyPressed(KEY_RIGHT) || IsKeyPressedRepeat(KEY_RIGHT))
     {
         u16 size = countCharNodes(head);
         cursor++;
         if(cursor > size) cursor = size;
         return;
     }
-    else if(key == KEY_BACKSPACE)
+    else if(IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE))
     {
         head = deleteCharNode(head, cursor-1);
         cursor--;
         if(cursor < 0) cursor = 0;
         return;
     }
-    else if(key == KEY_DELETE)
+    else if(IsKeyPressed(KEY_DELETE) || IsKeyPressedRepeat(KEY_DELETE))
     {
         head = deleteCharNode(head, cursor);
         return;
     }
-    else if(key == KEY_HOME)
+    else if(IsKeyPressed(KEY_HOME) || IsKeyPressedRepeat(KEY_HOME))
     {
         cursor = 0;
         return;
     }
-    else if(key == KEY_END)
+    else if(IsKeyPressed(KEY_END) || IsKeyPressedRepeat(KEY_END))
     {
         cursor = countCharNodes(head);
         return;
@@ -319,13 +453,27 @@ void consoleLoop()
     drawInWriting();
 }
 
-void print(cstring str)
+void print(cstring str, ...)
 {
-    printf(str);
+    va_list args;
+    va_start(args, str);
+    int needed = vsnprintf(NULL, 0, str, args) + 1;
+    va_end(args);
+
+    char *buffer = malloc(needed);
+    if (!buffer) {
+        return;
+    }
+
+    va_start(args, str);
+    vsnprintf(buffer, needed, str, args);
+    va_end(args);
+
+    printf("%s", buffer);
     int i = 0;
     char lastChar = '\0';
 
-    while(str[i] != '\0')
+    while(buffer[i] != '\0')
     {
         if(prints.bottomXPtr >= maxConsoleChars) 
         {
@@ -335,19 +483,21 @@ void print(cstring str)
             prints.bottomXPtr = 0;
         }
         if(prints.bottomPtr >= maxConsoleLines) prints.bottomPtr = 0;
-        lastChar = str[i];
-        if(str[i]=='\n')
+        lastChar = buffer[i];
+        if(buffer[i]=='\n')
         {
             i++;
+            prints.lines[prints.bottomPtr][prints.bottomXPtr] = '\n';
+            prints.lines[prints.bottomPtr][prints.bottomXPtr+1] = '\0';
             prints.bottomXPtr = 0;
             prints.bottomPtr +=1;
             if(prints.bottomPtr >= maxConsoleLines) prints.bottomPtr = 0;
             endTextYAbs += 1;
-            prints.lines[prints.bottomPtr][prints.bottomXPtr] = '\n';
             continue;
         }
 
-        prints.lines[prints.bottomPtr][prints.bottomXPtr] = str[i];
+        prints.lines[prints.bottomPtr][prints.bottomXPtr] = buffer[i];
+        //printf("c%d ", buffer[i]);
         prints.bottomXPtr +=1;
         i++;
     }
@@ -359,6 +509,19 @@ void print(cstring str)
     }
     else{
         prints.lines[prints.bottomPtr][prints.bottomXPtr] = '\0';
+        
     }
+    free(buffer);
 }
 
+void vprint(cstring str,va_list args)
+{
+    int needed = vsnprintf(NULL, 0, str, args) + 1;
+    char *buffer = malloc(needed);
+    if (!buffer) {
+        return;
+    }
+    vsnprintf(buffer, needed, str, args);
+    print("%s", buffer);
+    free(buffer);
+}

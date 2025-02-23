@@ -5,6 +5,7 @@
 #include "oslua.c"
 #include "raylib.h"
 #include "os.h"
+#include <stdio.h>
 
 
 
@@ -14,9 +15,14 @@ core cCore;
 char font[] = {
 #include "font.inl"
 };
-void printZbuffer()
+void printTile(tile t)
 {
-
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            printf("%d ", t[i][j]);
+        }
+        printf("\n");
+    }
 }
 // colors palette
 const rgb palette[16] = {
@@ -41,11 +47,13 @@ const rgb palette[16] = {
 void coreVBLANK()
 {
     cls();
+    if(cCore.running == false) return;
     if(cCore.vblank != NULL)
         cCore.vblank(&cCore);
 }
 void coreLoop()
 {
+    if(cCore.running == false) return;
     if(cCore.loop != NULL)
         cCore.loop(&cCore);
 }
@@ -64,6 +72,7 @@ string fileToString(cstring filename)
 }
 void coreSetup()
 {
+
     /*
     free(cCore.ram.script);
     cCore.ram.script = fileToString("editor.lua");
@@ -77,8 +86,9 @@ void coreSetup()
         cCore.setup(&cCore);
     
 }
-void closeScript()
+void coreClose()
 {
+
     if(cCore.close != NULL)
         cCore.close(&cCore);
     
@@ -280,7 +290,6 @@ void corePPUDraw()
 
     drawBackground();
     drawSprites();
-    printZbuffer();
 }
 
 
@@ -424,4 +433,91 @@ void printS(int x, int y, u8 color,cstring s)
     }
 }
 
+int loadSenString(cstring fileChars)
+{
+    core newCore;
+    cstring langDecl = strstr(fileChars, "--lang=");
+    if(langDecl == NULL) return 0;
+    langDecl += 7;
+    if(strncmp(langDecl, "lua", 3) == 0)
+    {
+        newCore.ram.language = LUA;
+    }
+    else
+    {
+        return 0;
+    }
+
+    cstring codeStart;
+    if(newCore.ram.language == LUA) codeStart= strstr(fileChars, "--<CODE>");
+    codeStart = strchr(codeStart, '\n')+1;
+    if(codeStart == NULL) return 0;
+    printf("codestart %d\n",codeStart);
+
+    cstring codeEnd;
+    if(newCore.ram.language == LUA) codeEnd = strstr(codeStart, "--</CODE>");
+
+    if(codeEnd == NULL) return 0;
+    printf("codeEnd %d\n",codeEnd);
+    int codeSize = codeEnd - codeStart;
+    coreClose();
+    string code = malloc(codeSize+1);
+    memcpy(code, codeStart, codeSize);
+    code[codeSize] = '\0';
+    newCore.ram.script = code;
+    printf("%s\n", code);
+
+    cstring tilesStart;
+    if(newCore.ram.language == LUA) tilesStart = strstr(fileChars,"--<TILES>");
+    tilesStart = strchr(tilesStart, '\n')+1;
+    printf("tilesStart %d\n",tilesStart);
+    cstring tilesEnd;
+    if(newCore.ram.language == LUA) tilesEnd = strstr(fileChars,"--</TILES>");
+    printf("tilesEnd %d\n",tilesEnd);
+    cstring cursor = tilesStart;
+    printf("size %d\n",tilesEnd-tilesStart);
+    
+    
+
+    while(cursor<tilesEnd)
+    {
+        cstring lineEnd = strchr(cursor,'\n');
+        if(lineEnd>=tilesEnd) break;
+        int lineSize = lineEnd-cursor;
+        //sscanf();
+        string line = malloc(lineSize+1);
+
+        memcpy(line,cursor,lineSize);
+        line[lineSize]='\0';
+        printf("line:%s\n",line);
+        int i;
+        tile *tiles = newCore.ram.bgTilesMem;
+        int b;
+        cstring format = "-- %03d: %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x";
+        sscanf(line, format, &i);
+        sscanf(line, format, &i,
+            &tiles[i][0][0], &tiles[i][0][1], &tiles[i][0][2], &tiles[i][0][3], &tiles[i][0][4], &tiles[i][0][5], &tiles[i][0][6], &tiles[i][0][7],
+            &tiles[i][1][0], &tiles[i][1][1], &tiles[i][1][2], &tiles[i][1][3], &tiles[i][1][4], &tiles[i][1][5], &tiles[i][1][6], &tiles[i][1][7],
+            &tiles[i][2][0], &tiles[i][2][1], &tiles[i][2][2], &tiles[i][2][3], &tiles[i][2][4], &tiles[i][2][5], &tiles[i][2][6], &tiles[i][2][7],
+            &tiles[i][3][0], &tiles[i][3][1], &tiles[i][3][2], &tiles[i][3][3], &tiles[i][3][4], &tiles[i][3][5], &tiles[i][3][6], &tiles[i][3][7],
+            &tiles[i][4][0], &tiles[i][4][1], &tiles[i][4][2], &tiles[i][4][3], &tiles[i][4][4], &tiles[i][4][5], &tiles[i][4][6], &tiles[i][4][7],
+            &tiles[i][5][0], &tiles[i][5][1], &tiles[i][5][2], &tiles[i][5][3], &tiles[i][5][4], &tiles[i][5][5], &tiles[i][5][6], &tiles[i][5][7],
+            &tiles[i][6][0], &tiles[i][6][1], &tiles[i][6][2], &tiles[i][6][3], &tiles[i][6][4], &tiles[i][6][5], &tiles[i][6][6], &tiles[i][6][7],
+            &tiles[i][7][0], &tiles[i][7][1], &tiles[i][7][2], &tiles[i][7][3], &tiles[i][7][4], &tiles[i][7][5], &tiles[i][7][6], &tiles[i][7][7]
+        );
+        printTile(tiles[i]);
+        
+        free(line);
+        cursor = lineEnd+1;
+    }
+    
+
+    
+    initLua(&newCore);
+    newCore.running = false;
+    cCore = newCore;
+
+    return 1;
+
+}
 
