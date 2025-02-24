@@ -2,12 +2,14 @@
 #include <raylib.h>
 #include "../graphics.h"
 #include <stdio.h>
+#include "tileEditor.h"
+#include "scriptEditor.h"
 
 extern core cCore;
 
-int selectedTile = 1;
-int selectedColor = 6;
 Vector2 mousePos;
+
+int editorPage = SCRIPT_EDITOR;
 
 void button(int x, int y, u8 w, u8 h, void (*draw)(int,int), void (*callback)(void))
 {
@@ -28,108 +30,159 @@ void drawRect(int x1, int y1, int x2, int y2, u8 color, u8 z)
     drawLine(x2, y1, x2, y2, color, z);
     drawLine(x1, y2, x2, y2, color, z);
 }
-void drawHorizontaFilledLine(int x1, int x2, int y, u8 color)
+void drawHorizontaFilledLine(int x1, int x2, int y, u8 color, u8 z)
 {
     for(int x = x1; x < x2; x++)
     {
-        drawFilled(x, y, color);
+        drawFilled(x, y, color,z);
     }
 }
-void drawSelectedTile(u8 x, u8 y)
-{
-    for(int i = 0; i < 8; i++)
-    {
-        for(int j = 0; j < 8; j++)
-        {
-            drawFilled(x+j, y+i, cCore.ram.bgTilesMem[selectedTile][i][j]);
-        }
-    }
-    drawRect(x*8-1, y*8-1, (x+8)*8, (y+8)*8, _WHITE, 20);
-}
-void drawColorPicker(u8 x, u8 y)
-{
-    u8 counter=0;
-    for(int i = 0; i<2; i++)
-    {
-        for(int j = 0; j<8; j++)
-        {
-            if(counter == selectedColor)
-            {
-                drawRect(x*8+j*8, y*8+i*8, x*8+j*8+7, y*8+i*8+7, _BLACK, 20);
-                drawRect(x*8+j*8-1, y*8+i*8-1, x*8+j*8+8, y*8+i*8+8, _WHITE, 20);
 
-            }
-            drawFilled(x+j, y+i, counter);
-            counter++;
-        }
-    }
-    drawRect(x*8-1, y*8-1, (x+8)*8, (y+2)*8, _WHITE, 20);
-
-}
-void drawTileSelector(u8 x, u8 y)
+void drawScriptIcon(int x, int y)
 {
-    int counter =0;
-    for(int y1 = 0;y1<16;y1++)
+
+    u8 c;
+    if(editorPage == SCRIPT_EDITOR)
     {
-        for(int x1 = 0;x1<16;x1++)
-        {
-            drawTile(x+x1, y+y1, &cCore.ram.bgTilesMem[counter], false, 0);
-            if(counter == selectedTile)
-            {
-                drawRect((x+x1)*8-1, (y+y1)*8-1, (x+x1)*8+8, (y+y1)*8+8, _WHITE, 20);
-            }
-            counter++;
-        }
+        c = _LIGHT_PEACH;
     }
-    drawRect(x*8-1, y*8-1, (x+16)*8, (y+16)*8, _WHITE, 20);
+    else
+    {
+        c = _DARK_PURPLE;
+    }
+    tile ul = {
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+        {0, 0, 0, c, c, c, c, 0, },
+        {0, 0, 0, c, c, c, c, 0, },
+        {0, c, c, c, c, 0, 0, 0, },
+        {0, c, c, c, c, 0, 0, 0, },
+        {0, c, c, c, c, 0, 0, 0, },
+        {0, c, c, c, c, 0, 0, 0, }
+    };
+    tile ur = {
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+        {0, c, c, c, c, 0, 0, 0, },
+        {0, c, c, c, c, 0, 0, 0, },
+        {0, 0, 0, c, c, c, c, 0, },
+        {0, 0, 0, c, c, c, c, 0, },
+        {0, 0, 0, c, c, c, c, 0, },
+        {0, 0, 0, c, c, c, c, 0, }
+    };
+    tile dl = {
+        {0, c, c, c, c, 0, 0, 0, },
+        {0, c, c, c, c, 0, 0, 0, },
+        {0, c, c, c, c, 0, 0, 0, },
+        {0, c, c, c, c, 0, 0, 0, },
+        {0, 0, 0, c, c, c, c, 0, },
+        {0, 0, 0, c, c, c, c, 0, },
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+    };
+    tile dr = {
+        {0, 0, 0, c, c, c, c, 0, },
+        {0, 0, 0, c, c, c, c, 0, },
+        {0, 0, 0, c, c, c, c, 0, },
+        {0, 0, 0, c, c, c, c, 0, },
+        {0, c, c, c, c, 0, 0, 0, },
+        {0, c, c, c, c, 0, 0, 0, },
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+    };
+    drawTileSP(x, y, &ul,true,35);
+    drawTileSP(x+8, y, &ur,true,35);
+    drawTileSP(x, y+8, &dl,true,35);
+    drawTileSP(x+8, y+8, &dr,true,35);
+}
+void changeToScriptEditor()
+{
+    editorPage = SCRIPT_EDITOR;
+}
+void drawTileIcon(int x, int y)
+{
+    u8 c;
+    if(editorPage == TILE_EDITOR)
+    {
+        c = _LIGHT_PEACH;
+    }
+    else
+    {
+        c = _DARK_PURPLE;
+    }
     
+    tile ul ={
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+        {0, c, c, c, c, c, c, c, },
+        {0, c, 0, 0, 0, 0, 0, 0, },
+        {0, c, 0, 0, 0, 0, 0, 0, },
+        {0, c, c, c, c, c, c, c, },
+        {0, c, 0, 0, c, 0, 0, 0, },
+        {0, c, 0, 0, c, 0, 0, 0, },
+        {0, c, c, c, c, c, c, c, },
+    };
+    tile ur = {
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+        {c, c, c, c, c, c, c, 0, },
+        {c, 0, 0, 0, 0, 0, c, 0, },
+        {c, 0, 0, 0, 0, 0, c, 0, },
+        {c, c, c, c, c, c, c, 0, },
+        {0, 0, c, 0, 0, 0, c, 0, },
+        {0, 0, c, 0, 0, 0, c, 0, },
+        {c, c, c, c, c, c, c, 0, },
+    };
+    tile dl = {
+        {0, c, 0, 0, 0, 0, 0, c, },
+        {0, c, 0, 0, 0, 0, 0, c, },
+        {0, c, c, c, c, c, c, c, },
+        {0, c, 0, 0, 0, c, 0, 0, },
+        {0, c, 0, 0, 0, c, 0, 0, },
+        {0, c, c, c, c, c, c, c, },
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+    };
+    tile dr = {
+        {0, 0, 0, 0, 0, 0, c, 0, },
+        {0, 0, 0, 0, 0, 0, c, 0, },
+        {c, c, c, c, c, c, c, 0, },
+        {0, 0, 0, c, 0, 0, c, 0, },
+        {0, 0, 0, c, 0, 0, c, 0, },
+        {c, c, c, c, c, c, c, 0, },
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+        {0, 0, 0, 0, 0, 0, 0, 0, },
+    };
+    drawTileSP(x, y, &ul,true,35);
+    drawTileSP(x+8, y, &ur,true,35);
+    drawTileSP(x, y+8, &dl,true,35);
+    drawTileSP(x+8, y+8, &dr,true,35);
+}
 
-}
-void detectColorSelect(u8 x, u8 y)
+void changeToTileEditor()
 {
-    int mouseX = mousePos.x;
-    int mouseY = mousePos.y;
-    if(IsMouseButtonDown(MOUSE_LEFT_BUTTON))
-    if(mouseX >= x*8 && mouseX < (x+8)*8 && mouseY >= y*8 && mouseY < (y+2)*8)
-    {
-        selectedColor = (mouseY/8-y)*8 + (mouseX/8-x);
-    }
+    editorPage = TILE_EDITOR;
 }
-void detectDraw(u8 x, u8 y)
-{
-    int mouseX = mousePos.x;
-    int mouseY = mousePos.y;
-    if(IsMouseButtonDown(MOUSE_LEFT_BUTTON))
-    if(mouseX >= x*8 && mouseX < (x+8)*8 && mouseY >= y*8 && mouseY < (y+8)*8)
-    {
-        cCore.ram.bgTilesMem[selectedTile][mouseY/8-y ][mouseX/8-x] = selectedColor;
-    }
-}
-void detectTileSelect(u8 x, u8 y)
-{
-    int mouseX = mousePos.x;
-    int mouseY = mousePos.y;
-    if(IsMouseButtonDown(MOUSE_LEFT_BUTTON))
-    if(mouseX >= x*8 && mouseX < (x+16)*8 && mouseY >= y*8 && mouseY < (y+16)*8)
-    {
-        if((mouseY/8-y)*16 + (mouseX/8-x)!=0)
-        selectedTile = (mouseY/8-y)*16 + (mouseX/8-x);
-    }
-}
-
 
 
 int editorLoop()
 {
     mousePos = calcMousePosition();
-    drawHorizontaFilledLine(0, 32, 0, 8);
-    drawHorizontaFilledLine(0, 32, 1, 8);
-    drawSelectedTile(1,3);
-    detectDraw(1,3);
-    drawColorPicker(1,12);
-    detectColorSelect(1,12);
-    drawTileSelector(13,3);
-    detectTileSelect(13,3);
+    drawHorizontaFilledLine(0, 32, 0, 8,30);
+    drawHorizontaFilledLine(0, 32, 1, 8,30);
+
+    drawHorizontaFilledLine(0, 32, 29, 8,30);
+
+
+    button(0, 0, 16,16, drawScriptIcon, changeToScriptEditor);
+    button(16, 0, 16,16, drawTileIcon, changeToTileEditor);
+
+    if(editorPage == TILE_EDITOR)
+    {
+        tileEditorLoop();
+    }
+    else if(editorPage == SCRIPT_EDITOR)
+    {
+        scriptEditorLoop();
+    }
     
     //drawLine(0, 0, 256, 240, _RED, 0);
     return 1;

@@ -7,6 +7,8 @@ doubleLinkedList *newDoubleLinkedList(void *data)
 {
     doubleLinkedList *out = malloc(sizeof(doubleLinkedList));
     out->data = data;
+    out->prev = NULL;
+    out->next = NULL;
     return out;
 }
 
@@ -98,5 +100,4 @@ void printDoubleLinkedListLine(doubleLinkedList *head)
         printf("l:%s\n", ((flexString*)current->data)->string);
         current = current->next;
     }
-    printf("\n");
 }

@@ -1,4 +1,4 @@
-#include "types.h"
+#include "types/types.h"
 #include "core.h"
 #include "lua.h"
 #include <stdlib.h>
@@ -118,7 +118,7 @@ void drawTile(int x, int y, tile *t, bool transparency, s8 z)
     {
         for(int j = 0; j < 8; j++)
         {
-            if(t[j][i] == cCore.ram.transparent && transparency) continue;
+            if((*t)[j][i] == cCore.ram.transparent && transparency) continue;
             
             pixelToScreen(x*8+i,y*8+j, (*t)[j][i], z);
         }
@@ -134,7 +134,7 @@ void drawTileSP(int x, int y, tile *t, bool transparency, s8 z)
     {
         for(int j = 0; j < 8; j++)
         {
-            if(t[j][i] == cCore.ram.transparent && transparency) continue;
+            if((*t)[j][i] == cCore.ram.transparent && transparency) continue;
 
             pixelToScreen(x+i,y+j, (*t)[j][i], z);
         }
@@ -163,13 +163,13 @@ void drawSprites()
     }
 }
 
-void drawFilled(int x, int y, u8 color)
+void drawFilled(int x, int y, u8 color, u8 z)
 {
     for(int i = 0; i < 8; i++)
     {
         for(int j = 0; j < 8; j++)
         {
-            pixelToScreen(x*8+i, y*8+j, color,5);
+            pixelToScreen(x*8+i, y*8+j, color,z);
         }
     }
 }
@@ -436,7 +436,7 @@ void loadTiles()
     free((void *)buffer);
 }
 
-void printC(int x, int y, char c, u8 color)
+void printC(int x, int y, char c, u8 color, u8 z)
 {
     for(int y1 = 0; y1 < 8; y1++)
     {
@@ -444,7 +444,7 @@ void printC(int x, int y, char c, u8 color)
         {
             if(font[(int)c*8+y1] & (1 << x1))
             {
-                pixelToScreen(x+x1, y+y1, color, 20);
+                pixelToScreen(x+x1, y+y1, color, z);
             }
         }
     }
@@ -454,7 +454,7 @@ void printS(int x, int y, u8 color,cstring s)
     int i = 0;
     while(s[i] != '\0')
     {
-        printC(x+i*6, y, s[i], color);
+        printC(x+i*6, y, s[i], color, 20);
         i++;
     }
 }

@@ -1,7 +1,7 @@
 #ifndef LUA_H
 #define LUA_H
 
-#include "types.h"
+#include "types/types.h"
 #include "core.h"
 
 void initLua(core *cCore);

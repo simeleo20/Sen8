@@ -31,7 +31,7 @@ flexString *resizeFlexString(flexString *flexStr,int capacity)
 }
 flexString *appendInFlexString(flexString *flexStr, char c)
 {
-  
+    printf("append\n");
     flexString *out = flexStr;
     if(flexStr->byteUsed==flexStr->capacity)
     {

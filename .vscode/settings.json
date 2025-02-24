@@ -28,6 +28,7 @@
     "doublelinkedlist.h": "c",
     "flexstring.h": "c",
     "editor.h": "c",
-    "os.h": "c"
+    "os.h": "c",
+    "lua.h": "c"
   }
 }

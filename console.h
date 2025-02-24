@@ -1,7 +1,7 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
 
-#include "types.h"
+#include "types/types.h"
 #include "core.h"
 #include <raylib.h>
 

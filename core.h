@@ -1,7 +1,7 @@
 #ifndef CORE_H
 #define CORE_H
 
-#include "types.h"
+#include "types/types.h"
 #include <lua.h>
 
 //buttons
@@ -126,7 +126,8 @@ void spriteTileLoad(u8 index, tile t);
 void setScrollX(int x);
 void setScrollY(int y);
 void drawTile(int x, int y, tile *t, bool transparency, s8 z);
-void drawFilled(int x, int y, u8 color);
+void drawTileSP(int x, int y, tile *t, bool transparency, s8 z);
+void drawFilled(int x, int y, u8 color, u8 z);
 void drawRectFilled(int x, int y, int w, int h, u8 color, u8 z);
 void drawLine(int x1, int y1, int x2, int y2, u8 color, u8 z);
 void setTransparent(u8 color);
@@ -147,6 +148,6 @@ void loadTiles();
 int loadSenString(cstring fileChars);
 int loadCart(cart *cartridge);
 void printS(int x, int y, u8 color,cstring s);
-void printC(int x, int y, char c, u8 color);
+void printC(int x, int y, char c, u8 color, u8 z);
 
 #endif // CORE_H

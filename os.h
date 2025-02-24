@@ -1,7 +1,7 @@
 #ifndef OS_H
 #define OS_H
 
-#include "types.h"
+#include "types/types.h"
 
 void osLoop();
 

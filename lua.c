@@ -140,7 +140,7 @@ int luaDrawFilled(lua_State *L)
     int x = lua_tonumber(L, -3);
     int y = lua_tonumber(L, -2);
     u8 color = lua_tonumber(L, -1);
-    drawFilled(x, y, color);
+    drawFilled(x, y, color,5);
     return 0; // number of results
 }
 int LuaSetTransparent(lua_State *L)
