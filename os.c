@@ -1,7 +1,7 @@
 #include "os.h"
 #include <raylib.h>
 #include "console.h"
-#include "editor.h"
+#include "editor/editor.h"
 
 extern core cCore;
 

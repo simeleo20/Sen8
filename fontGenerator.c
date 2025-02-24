@@ -53,10 +53,10 @@ void write()
 
     fclose(file);
 }
-
+/*
 int main()
 {
     popolate();
     write();
     return 0;
-}
+}*/

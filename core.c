@@ -2,28 +2,11 @@
 #include "core.h"
 #include "lua.h"
 #include <stdlib.h>
-#include "oslua.c"
+//#include "oslua.c"
 #include "raylib.h"
 #include "os.h"
 #include <stdio.h>
 
-
-
-//current core
-core cCore;
-//size 127*8
-char font[] = {
-#include "font.inl"
-};
-void printTile(tile t)
-{
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
-            printf("%d ", t[i][j]);
-        }
-        printf("\n");
-    }
-}
 // colors palette
 const rgb palette[16] = {
     {0, 0, 0},       // black 0
@@ -43,6 +26,23 @@ const rgb palette[16] = {
     {255, 119, 168}, // pink
     {255, 204, 170}  // light-peach
 };
+
+//current core
+core cCore;
+//size 127*8
+char font[] = {
+#include "font.inl"
+};
+void printTile(tile t)
+{
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            printf("%d ", t[i][j]);
+        }
+        printf("\n");
+    }
+}
+
 
 void coreVBLANK()
 {

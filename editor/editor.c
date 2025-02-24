@@ -1,6 +1,6 @@
 #include "editor.h"
-#include "raylib.h"
-#include "graphics.h"
+#include <raylib.h>
+#include "../graphics.h"
 #include <stdio.h>
 
 extern core cCore;

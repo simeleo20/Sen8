@@ -486,6 +486,28 @@ void detectWrite()
         cursor = countCharNodes(head);
         return;
     }
+    else if (IsKeyDown(KEY_LEFT_CONTROL))
+    {
+        if(IsKeyPressed(KEY_C))
+        {
+            cstring str = charNodesToString(head);
+            SetClipboardText(str);
+            free(str);
+            return;
+        }
+        else if(IsKeyPressed(KEY_V))
+        {
+            printf("v\n");
+            string str = GetClipboardText();
+            for(int i = 0; i < strlen(str); i++)
+            {
+                printf("%c\n", str[i]);
+                head = insertCharNode(head, cursor, str[i]);
+                cursor++;
+            }
+            return;
+        }
+    }
 
     unsigned char c = GetCharPressed();
     if(c>127) return;
@@ -501,7 +523,9 @@ void consoleLoop()
 {
     conSetup();
     detectWrite();
+    
     drawPrints();
+    
     drawInWriting();
 }
 

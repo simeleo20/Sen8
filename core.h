@@ -57,6 +57,10 @@ typedef enum color {
     _PINK,
     _LIGHT_PEACH
 } color;
+
+
+
+
 #define PTR_SIZE 8
 #define MEM_SIZE (256+256)*TILE_SIZE+(60*64)+(2*4)+(SPRITE_SIZE*64)+(SCREEN_HEIGHT*SCREEN_WIDTH*2)+1+1+PTR_SIZE+1+1
 
@@ -144,4 +148,5 @@ int loadSenString(cstring fileChars);
 int loadCart(cart *cartridge);
 void printS(int x, int y, u8 color,cstring s);
 void printC(int x, int y, char c, u8 color);
+
 #endif // CORE_H

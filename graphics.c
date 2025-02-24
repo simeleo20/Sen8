@@ -1,11 +1,13 @@
 #include <stdio.h>
-#include "core.c"
+#include "core.h"
 #include "graphics.h"
 #include "customLog.h"
+#include "os.h"
 
 int screenWidth = 256;
 int screenHeight = 240;
 extern core cCore;
+extern const rgb palette[];
 
 float newScreenWidth;
 float newScreenHeight;

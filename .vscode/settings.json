@@ -23,6 +23,11 @@
     "raylib.h": "c",
     "newprintf.h": "c",
     "cstdio": "c",
-    "console.h": "c"
+    "console.h": "c",
+    "vector": "c",
+    "doublelinkedlist.h": "c",
+    "flexstring.h": "c",
+    "editor.h": "c",
+    "os.h": "c"
   }
 }
