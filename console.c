@@ -13,6 +13,7 @@ printMem prints;
 int endTextYAbs = 0;
 charNode *head;
 int cursor = 0;
+extern core cCore;
 
 #ifdef _WIN32
     #define getUserFolder getenv("APPDATA")
@@ -52,7 +53,8 @@ command commands[] = {
     {"ls", execLs},
     {"cd", execCd},
     {"mk", execMk},
-    {"load", execLoad}
+    {"load", execLoad},
+    {"save", execSave}
 };
 #define commandsSize (sizeof(commands)/sizeof(command))
 
@@ -325,22 +327,72 @@ int execLoad(cstring str)
     }
     strcpy(str, str+i);
 
-    
-
-    cstring fileChars = LoadFileText(str);
-    if(fileChars == NULL)
-    {
-        print("File not found\n");
-        return -1;
-    }
-
     cstring ext = GetFileExtension(str);
     if(strcmp(ext, ".sen") == 0)
     {
+
+        cstring fileChars = LoadFileText(str);
+        if(fileChars == NULL)
+        {
+            print("File not found\n");
+            return -1;
+        }
+
         print("loaded sen file\n");
         loadSenString(fileChars);
     }
+    else if(strcmp(ext, ".bin")==0||strcmp(ext, ".cart")==0)
+    {
+        int size;
+        unsigned char *data = LoadFileData(str, &size);
+
+        if(data == NULL)
+        {
+            print("File not found\n");
+            return -1;
+        }
+
+        cart cartridge;
+        memcpy(&cartridge, data, sizeof(cart)-sizeof(cstring));
+        string script = malloc(size - (sizeof(cart)-sizeof(cstring)));
+        memcpy(script, data+sizeof(cart)-sizeof(cstring), size - (sizeof(cart)-sizeof(cstring)));
+        cartridge.script = script;
+
+        loadCart(&cartridge);
+        
+        free(data);
+        print("loaded cartridge\n");
+        return 1;
+    }
+    print("format not recognized\n");
+    return -1;
+}
+
+int execSave(cstring str)
+{
+    int i = 5;
+    while(str[i]==' ' && str[i]!='\0')
+    {
+        i++;
+    }
+    strcpy(str, str+i);
     
+    
+    cart cartridge;
+    cartridge.language = cCore.ram.language;
+    
+    int scriptSize=strlen(cCore.ram.script)+1;
+    cartridge.script = cCore.ram.script;
+    
+    memcpy(cartridge.spritesTileMem, cCore.ram.spritesTileMem, sizeof(cCore.ram.spritesTileMem));
+    memcpy(cartridge.bgTilesMem, cCore.ram.bgTilesMem, sizeof(cCore.ram.bgTilesMem));
+    
+    unsigned char *data = malloc(scriptSize + sizeof(cart)-sizeof(cstring));
+    memcpy(data, &cartridge, sizeof(cart)-sizeof(cstring));
+    memcpy(data+sizeof(cart)-sizeof(cstring), cartridge.script, scriptSize);
+    SaveFileData(str, data, scriptSize + sizeof(cart)-sizeof(cstring));
+    free(data);
+    print("saved\n");
 }
 
 int tryExecCode(cstring str)

@@ -112,7 +112,7 @@ void pixelToScreen(int x, int y, u8 color, s8 z)
     
 }
 
-void drawTile(int x, int y, tile t, bool transparency, s8 z)
+void drawTile(int x, int y, tile *t, bool transparency, s8 z)
 {
     for(int i = 0; i < 8; i++)
     {
@@ -120,13 +120,13 @@ void drawTile(int x, int y, tile t, bool transparency, s8 z)
         {
             if(t[j][i] == cCore.ram.transparent && transparency) continue;
             
-            pixelToScreen(x*8+i,y*8+j, t[j][i], z);
+            pixelToScreen(x*8+i,y*8+j, (*t)[j][i], z);
         }
     }
 }
 
 //draw tile with screen position
-void drawTileSP(int x, int y, tile t, bool transparency, s8 z)
+void drawTileSP(int x, int y, tile *t, bool transparency, s8 z)
 {
     
 
@@ -136,7 +136,7 @@ void drawTileSP(int x, int y, tile t, bool transparency, s8 z)
         {
             if(t[j][i] == cCore.ram.transparent && transparency) continue;
 
-            pixelToScreen(x+i,y+j, t[j][i], z);
+            pixelToScreen(x+i,y+j, (*t)[j][i], z);
         }
     }
 }
@@ -149,7 +149,7 @@ void drawBackground()
         {
             bool transp = true;
             if(cCore.ram.bgMap[y][x] == 0) transp = false;
-            drawTile(x, y, cCore.ram.bgTilesMem[cCore.ram.bgMap[y][x]], transp, 0);
+            drawTile(x, y, &cCore.ram.bgTilesMem[cCore.ram.bgMap[y][x]], transp, 0);
         }
     }
 }
@@ -159,7 +159,7 @@ void drawSprites()
     for(int i = 0; i < 64; i++)
     {
         sprite s = cCore.ram.sprites[i];
-        drawTileSP(s.x, s.y, cCore.ram.spritesTileMem[s.tileIndex],true,10);
+        drawTileSP(s.x, s.y, &cCore.ram.spritesTileMem[s.tileIndex],true,10);
     }
 }
 
@@ -180,6 +180,31 @@ void drawRectFilled(int x, int y, int w, int h, u8 color, u8 z)
         for(int x1 = 0; x1 < w; x1++)
         {
             pixelToScreen(x+x1, y+y1, color,z);
+        }
+    }
+}
+void drawLine(int x1, int y1, int x2, int y2, u8 color, u8 z)
+{
+    int dx = abs(x2-x1);
+    int dy = abs(y2-y1);
+    int sx = x1 < x2 ? 1 : -1;
+    int sy = y1 < y2 ? 1 : -1;
+    int err = dx-dy;
+    int e2;
+    while(true)
+    {
+        pixelToScreen(x1, y1, color, z);
+        if(x1 == x2 && y1 == y2) break;
+        e2 = 2*err;
+        if(e2 > -dy)
+        {
+            err -= dy;
+            x1 += sx;
+        }
+        if(e2 < dx)
+        {
+            err += dx;
+            y1 += sy;
         }
     }
 }
@@ -287,7 +312,7 @@ void setTransparent(u8 color)
 
 void corePPUDraw()
 {
-
+    if(cCore.running == false) return;
     drawBackground();
     drawSprites();
 }
@@ -324,6 +349,7 @@ void initScreen()
     cCore.ram.scrollX = 0;
     cCore.ram.scrollY = 0;
     cCore.ram.transparent = 0;
+    cCore.ram.script = "";
     cls();
     resetBgMap();
     for(int x = 0; x < 256; x++)
@@ -433,6 +459,49 @@ void printS(int x, int y, u8 color,cstring s)
     }
 }
 
+int loadTilesFromString(cstring str, tile *tiles, cstring startStr, cstring endStr)
+{
+    cstring cursor = strstr(str, startStr);
+    if(cursor == NULL) return 0;
+    cursor = strchr(cursor, '\n')+1;
+    cstring end = strstr(cursor, endStr);
+    if(end == NULL) return 0;
+    cstring line = cursor;
+    while(cursor < end)
+    {
+        cstring lineEnd = strchr(cursor, '\n');
+        if(lineEnd >= end) break;
+        int lineSize = lineEnd - cursor;
+        string line = malloc(lineSize+1);
+        memcpy(line, cursor, lineSize);
+        line[lineSize] = '\0';
+        int i=0;
+        printf("line: %s\n",line);
+        if(strncmp(line, "--", 2) == 0)
+        {
+            line[0] = ' ';
+            line[1] = ' ';
+            sscanf(line, "%03d:",&i);
+            sscanf(line, "%03d: %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x",
+                &i,
+                (unsigned int *)&tiles[i][0][0], (unsigned int *)&tiles[i][0][1], (unsigned int *)&tiles[i][0][2], (unsigned int *)&tiles[i][0][3], (unsigned int *)&tiles[i][0][4], (unsigned int *)&tiles[i][0][5], (unsigned int *)&tiles[i][0][6], (unsigned int *)&tiles[i][0][7],
+                (unsigned int *)&tiles[i][1][0], (unsigned int *)&tiles[i][1][1], (unsigned int *)&tiles[i][1][2], (unsigned int *)&tiles[i][1][3], (unsigned int *)&tiles[i][1][4], (unsigned int *)&tiles[i][1][5], (unsigned int *)&tiles[i][1][6], (unsigned int *)&tiles[i][1][7],
+                (unsigned int *)&tiles[i][2][0], (unsigned int *)&tiles[i][2][1], (unsigned int *)&tiles[i][2][2], (unsigned int *)&tiles[i][2][3], (unsigned int *)&tiles[i][2][4], (unsigned int *)&tiles[i][2][5], (unsigned int *)&tiles[i][2][6], (unsigned int *)&tiles[i][2][7],
+                (unsigned int *)&tiles[i][3][0], (unsigned int *)&tiles[i][3][1], (unsigned int *)&tiles[i][3][2], (unsigned int *)&tiles[i][3][3], (unsigned int *)&tiles[i][3][4], (unsigned int *)&tiles[i][3][5], (unsigned int *)&tiles[i][3][6], (unsigned int *)&tiles[i][3][7],
+                (unsigned int *)&tiles[i][4][0], (unsigned int *)&tiles[i][4][1], (unsigned int *)&tiles[i][4][2], (unsigned int *)&tiles[i][4][3], (unsigned int *)&tiles[i][4][4], (unsigned int *)&tiles[i][4][5], (unsigned int *)&tiles[i][4][6], (unsigned int *)&tiles[i][4][7],
+                (unsigned int *)&tiles[i][5][0], (unsigned int *)&tiles[i][5][1], (unsigned int *)&tiles[i][5][2], (unsigned int *)&tiles[i][5][3], (unsigned int *)&tiles[i][5][4], (unsigned int *)&tiles[i][5][5], (unsigned int *)&tiles[i][5][6], (unsigned int *)&tiles[i][5][7],
+                (unsigned int *)&tiles[i][6][0], (unsigned int *)&tiles[i][6][1], (unsigned int *)&tiles[i][6][2], (unsigned int *)&tiles[i][6][3], (unsigned int *)&tiles[i][6][4], (unsigned int *)&tiles[i][6][5], (unsigned int *)&tiles[i][6][6], (unsigned int *)&tiles[i][6][7],
+                (unsigned int *)&tiles[i][7][0], (unsigned int *)&tiles[i][7][1], (unsigned int *)&tiles[i][7][2], (unsigned int *)&tiles[i][7][3], (unsigned int *)&tiles[i][7][4], (unsigned int *)&tiles[i][7][5], (unsigned int *)&tiles[i][7][6], (unsigned int *)&tiles[i][7][7]
+            );
+            printTile(tiles[i]);
+        }   
+        free(line);
+        
+        cursor = lineEnd+1;
+    }
+    return 1;
+}
+
 int loadSenString(cstring fileChars)
 {
     core newCore;
@@ -452,65 +521,23 @@ int loadSenString(cstring fileChars)
     if(newCore.ram.language == LUA) codeStart= strstr(fileChars, "--<CODE>");
     codeStart = strchr(codeStart, '\n')+1;
     if(codeStart == NULL) return 0;
-    printf("codestart %d\n",codeStart);
 
     cstring codeEnd;
     if(newCore.ram.language == LUA) codeEnd = strstr(codeStart, "--</CODE>");
 
     if(codeEnd == NULL) return 0;
-    printf("codeEnd %d\n",codeEnd);
     int codeSize = codeEnd - codeStart;
     coreClose();
+
     string code = malloc(codeSize+1);
     memcpy(code, codeStart, codeSize);
     code[codeSize] = '\0';
     newCore.ram.script = code;
     printf("%s\n", code);
 
-    cstring tilesStart;
-    if(newCore.ram.language == LUA) tilesStart = strstr(fileChars,"--<TILES>");
-    tilesStart = strchr(tilesStart, '\n')+1;
-    printf("tilesStart %d\n",tilesStart);
-    cstring tilesEnd;
-    if(newCore.ram.language == LUA) tilesEnd = strstr(fileChars,"--</TILES>");
-    printf("tilesEnd %d\n",tilesEnd);
-    cstring cursor = tilesStart;
-    printf("size %d\n",tilesEnd-tilesStart);
+    if(newCore.ram.language == LUA) loadTilesFromString(fileChars, newCore.ram.bgTilesMem, "--<TILES>", "--</TILES>");
     
-    
-
-    while(cursor<tilesEnd)
-    {
-        cstring lineEnd = strchr(cursor,'\n');
-        if(lineEnd>=tilesEnd) break;
-        int lineSize = lineEnd-cursor;
-        //sscanf();
-        string line = malloc(lineSize+1);
-
-        memcpy(line,cursor,lineSize);
-        line[lineSize]='\0';
-        printf("line:%s\n",line);
-        int i;
-        tile *tiles = newCore.ram.bgTilesMem;
-        int b;
-        cstring format = "-- %03d: %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x";
-        sscanf(line, format, &i);
-        sscanf(line, format, &i,
-            &tiles[i][0][0], &tiles[i][0][1], &tiles[i][0][2], &tiles[i][0][3], &tiles[i][0][4], &tiles[i][0][5], &tiles[i][0][6], &tiles[i][0][7],
-            &tiles[i][1][0], &tiles[i][1][1], &tiles[i][1][2], &tiles[i][1][3], &tiles[i][1][4], &tiles[i][1][5], &tiles[i][1][6], &tiles[i][1][7],
-            &tiles[i][2][0], &tiles[i][2][1], &tiles[i][2][2], &tiles[i][2][3], &tiles[i][2][4], &tiles[i][2][5], &tiles[i][2][6], &tiles[i][2][7],
-            &tiles[i][3][0], &tiles[i][3][1], &tiles[i][3][2], &tiles[i][3][3], &tiles[i][3][4], &tiles[i][3][5], &tiles[i][3][6], &tiles[i][3][7],
-            &tiles[i][4][0], &tiles[i][4][1], &tiles[i][4][2], &tiles[i][4][3], &tiles[i][4][4], &tiles[i][4][5], &tiles[i][4][6], &tiles[i][4][7],
-            &tiles[i][5][0], &tiles[i][5][1], &tiles[i][5][2], &tiles[i][5][3], &tiles[i][5][4], &tiles[i][5][5], &tiles[i][5][6], &tiles[i][5][7],
-            &tiles[i][6][0], &tiles[i][6][1], &tiles[i][6][2], &tiles[i][6][3], &tiles[i][6][4], &tiles[i][6][5], &tiles[i][6][6], &tiles[i][6][7],
-            &tiles[i][7][0], &tiles[i][7][1], &tiles[i][7][2], &tiles[i][7][3], &tiles[i][7][4], &tiles[i][7][5], &tiles[i][7][6], &tiles[i][7][7]
-        );
-        printTile(tiles[i]);
-        
-        free(line);
-        cursor = lineEnd+1;
-    }
-    
+    if(newCore.ram.language == LUA) loadTilesFromString(fileChars, newCore.ram.spritesTileMem, "--<SPRITES>", "--</SPRITES>");
 
     
     initLua(&newCore);
@@ -521,3 +548,48 @@ int loadSenString(cstring fileChars)
 
 }
 
+int loadCart(cart *cartridge)
+{
+    core newCore;
+    newCore.ram.language = cartridge->language;
+    newCore.ram.script = cartridge->script;
+    memcpy(newCore.ram.bgTilesMem, cartridge->bgTilesMem, sizeof(newCore.ram.bgTilesMem));
+    memcpy(newCore.ram.spritesTileMem, cartridge->spritesTileMem, sizeof(newCore.ram.spritesTileMem));
+    initLua(&newCore);
+    newCore.running = false;
+    cCore = newCore;
+    return 1;
+}
+
+cstring generateSenStr()
+{
+    char commentSimbol;
+    if(cCore.ram.language == LUA) commentSimbol = '-';
+    string tilesStr = malloc(256*8*8);
+    tile *tiles = cCore.ram.bgTilesMem;
+
+    for(int i = 0; i < 256; i++)
+    {
+        bool empty = true;
+        for(int j = 0; j < 8; j++)
+        {
+            for(int k = 0; k < 8; k++)
+            {
+                if(tiles[i][j][k] != 0)
+                {
+                    empty = false;
+                    break;
+                }
+            }
+            if(!empty) break;
+        }
+        for(int j = 0; j < 8; j++)
+        {
+            for(int k = 0; k < 8; k++)
+            {
+                
+            }
+        }
+    }
+    string sprites = malloc(256*8*8);
+}

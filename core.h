@@ -81,6 +81,12 @@ typedef struct {
         
     };
 } mem;
+typedef struct {
+    tile spritesTileMem[256];
+    tile bgTilesMem[256];
+    u8 language;
+    cstring script;
+} cart;
 
 //vm
 typedef struct vm {
@@ -115,8 +121,10 @@ void bgTileLoad(u8 index, tile t);
 void spriteTileLoad(u8 index, tile t);
 void setScrollX(int x);
 void setScrollY(int y);
+void drawTile(int x, int y, tile *t, bool transparency, s8 z);
 void drawFilled(int x, int y, u8 color);
 void drawRectFilled(int x, int y, int w, int h, u8 color, u8 z);
+void drawLine(int x1, int y1, int x2, int y2, u8 color, u8 z);
 void setTransparent(u8 color);
 void setSprite(u8 index, int x, int y, u8 tileIndex, bool flipH, bool flipV, bool priority);
 void setSpriteX(u8 index, int x);
@@ -133,6 +141,7 @@ void cls();
 cstring loadTilesData(cstring filename);
 void loadTiles();
 int loadSenString(cstring fileChars);
+int loadCart(cart *cartridge);
 void printS(int x, int y, u8 color,cstring s);
 void printC(int x, int y, char c, u8 color);
 #endif // CORE_H

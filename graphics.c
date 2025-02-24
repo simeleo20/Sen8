@@ -16,7 +16,6 @@ void putPixel(u8 x, u8 y, u8 color)
 {
     DrawPixel(x, y, (Color){palette[color].r, palette[color].g, palette[color].b, 255});
 }
-
 void drawScreen()
 {
     for(int y = 0; y < 240; y++)

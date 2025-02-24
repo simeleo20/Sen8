@@ -22,6 +22,7 @@
     "fcntl.h": "c",
     "raylib.h": "c",
     "newprintf.h": "c",
-    "cstdio": "c"
+    "cstdio": "c",
+    "console.h": "c"
   }
 }
