@@ -147,7 +147,7 @@ u16 countCharNodes(charNode *head)
     return i;
 }
 
-cstring charNodesToString(charNode *head)
+string charNodesToString(charNode *head)
 {
     u16 size = countCharNodes(head);
     string str = malloc(size+1);
@@ -235,7 +235,7 @@ void drawInWriting()
     {
         countWrite = 0;
     }
-    cstring str = charNodesToString(head);
+    string str = charNodesToString(head);
     int endTextRel = ((endTextYAbs < 33)? endTextYAbs : 33 );
     int localPathLen = strlen(localPath);
     printS((localPathLen*6)+6, 2+endTextRel*7, 7, str);
@@ -243,7 +243,7 @@ void drawInWriting()
     {
         
         drawRectFilled((localPathLen*6)+5+cursor*6, 1+endTextRel*7, 7, 7, 7, 10);
-        printC((localPathLen*6)+6+cursor*6, 2+endTextRel*7, str[cursor], 0);
+        printC((localPathLen*6)+6+cursor*6, 2+endTextRel*7, str[cursor], 0, 20);
     }
     free(str);
     lastCursor = cursor;

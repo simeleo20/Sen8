@@ -218,7 +218,6 @@ void drawText()
             }
             int cX = xOff+(j*6)-camPos.x;
             int cY = yOff+(i*6)-camPos.y;
-            printf("%d %d\n",cX,cY);
             if(cX > -6 && cX < 256 && cY-yOff > -6 && cY-yOff < yLimit)
             { 
                 printC(cX,cY,c,color,10);
