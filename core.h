@@ -89,7 +89,7 @@ typedef struct {
     tile spritesTileMem[256];
     tile bgTilesMem[256];
     u8 language;
-    cstring script;
+    string script;
 } cart;
 
 //vm
@@ -110,17 +110,17 @@ typedef struct {
     void (*loop)();
     void (*setup)();
     void (*close)();
-
+    void (*resetVM)();
 } core;
 
 typedef enum languageE { LUA, PYTHON, JS } languageE;
 
-void initScreen();
+void resetScreen();
 void corePPUDraw();
 
 
 void bgSet(u16 x, u16 y, u8 tileIndex);
-u8 bgGet(u16 x, u16 y);
+u8 bgGet(u16 x, u16 y); 
 void bgTileLoad(u8 index, tile t);
 void spriteTileLoad(u8 index, tile t);
 void setScrollX(int x);
@@ -143,6 +143,10 @@ void coreLoop();
 void coreSetup();
 void coreClose();
 void cls();
+void resetScreen();
+void startRunning();
+void stopRunning();
+void createVM();
 cstring loadTilesData(cstring filename);
 void loadTiles();
 int loadSenString(cstring fileChars);

@@ -2,15 +2,11 @@
 #include <raylib.h>
 #include "console.h"
 #include "editor/editor.h"
+#include "editor/scriptEditor.h"
 
 extern core cCore;
 
-enum page
-{
-    CONSOLE,
-    RUNTIME,
-    EDITOR
-};
+
 
 int currentPage = EDITOR;
 
@@ -29,7 +25,7 @@ void osLoop()
     {
         if(cCore.running == true)
         {
-            cCore.running = false;
+            stopRunning();
             currentPage = CONSOLE;
         }
         else if(currentPage == CONSOLE)
@@ -39,6 +35,7 @@ void osLoop()
         else if(currentPage == EDITOR)
         {
             currentPage = CONSOLE;
+            loadScriptToRam();
         }
     }
 

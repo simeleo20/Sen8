@@ -18,6 +18,7 @@ void insertAfterDoubleLinkedList(doubleLinkedList *node, doubleLinkedList *newNo
 doubleLinkedList *removeDoubleLinkedList(doubleLinkedList *head, doubleLinkedList *node);
 doubleLinkedList *removePrevDoubleLinkedList(doubleLinkedList *head, doubleLinkedList *node);
 doubleLinkedList *removeNextDoubleLinkedList(doubleLinkedList *head, doubleLinkedList *node);
+void removeAllDoubleLinkedList(doubleLinkedList *head);
 void printDoubleLinkedListLine(doubleLinkedList *head);
 
 #endif // DOUBLE_LINKED_LIST_H

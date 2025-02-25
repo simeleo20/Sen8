@@ -29,6 +29,7 @@
     "flexstring.h": "c",
     "editor.h": "c",
     "os.h": "c",
-    "lua.h": "c"
+    "lua.h": "c",
+    "scripteditor.h": "c"
   }
 }

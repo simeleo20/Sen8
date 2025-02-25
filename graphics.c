@@ -97,7 +97,7 @@ int getCharPressed()
 int main(void)
 {
     
-    initScreen();
+    resetScreen();
     SetTargetFPS(60);
     SetTraceLogCallback(CustomLog);
     InitWindow(256, 240, "Fantasy Console");

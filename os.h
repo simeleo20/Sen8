@@ -3,6 +3,13 @@
 
 #include "types/types.h"
 
+enum page
+{
+    CONSOLE,
+    RUNTIME,
+    EDITOR
+};
+
 void osLoop();
 
 #endif // OS_H

@@ -91,6 +91,17 @@ doubleLinkedList *removeNextDoubleLinkedList(doubleLinkedList *head, doubleLinke
     doubleLinkedList *cursor = node->next;
     return removeDoubleLinkedList(head,cursor);
 }
+void removeAllDoubleLinkedList(doubleLinkedList *head)
+{
+    doubleLinkedList *current = head;
+    while(current != NULL)
+    {
+        doubleLinkedList *next = current->next;
+        free(current->data);
+        free(current);
+        current = next;
+    }
+}
 
 void printDoubleLinkedListLine(doubleLinkedList *head)
 {

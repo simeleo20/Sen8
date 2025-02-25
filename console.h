@@ -42,6 +42,7 @@ int execCd(cstring str);
 int execMk(cstring str);
 int execLoad(cstring str);
 int execSave(cstring str);
+int execRun(cstring str);
 
 
 #endif // CONSOLE_H

@@ -13,6 +13,70 @@ int rowCursor = 0;
 int lineCursor = 0;
 int savedRowCursor = 0;
 Vector2 camPos = {0,0};
+extern core cCore;
+string lastScript;
+
+string getScriptEditorText()
+{
+    flexString *out = newFlexString("");
+    doubleLinkedList *current = scriptEditorLines;
+    while(current != NULL)
+    {
+        out = insertFlexStringInFlexString(out, current->data, out->byteUsed);
+        out = insertCharsInFlexString(out, "\n", out->byteUsed, 1);
+        current = current->next;
+    }
+    string outStr = malloc(out->byteUsed+1);
+    memcpy(outStr, out->string, out->byteUsed);
+    outStr[out->byteUsed] = '\0';
+    free(out);
+    return outStr;
+}
+void loadScriptToRam()
+{
+    string script = getScriptEditorText();
+    cCore.ram.script = script;
+}
+doubleLinkedList *scriptToDoubleLinkedList(string script)
+{
+    doubleLinkedList *out = NULL;
+    int i = 0;
+    int j = 0;
+    doubleLinkedList *current = NULL;
+    while(script[i] != '\0')
+    {
+        if(script[i] == '\n')
+        {
+            flexString *line = newFlexString("");
+            line = insertCharsInFlexString(line, script+j, 0, i-j);
+            if(out == NULL)
+            {
+                out = newDoubleLinkedList(line);
+                current = out;
+            }
+            else
+            {
+                insertAfterDoubleLinkedList(current, newDoubleLinkedList(line));
+                current = current->next;
+            }
+            j = i+1;
+        }
+        i++;
+    }
+    return out;
+}
+void loadScriptFromRam()
+{
+    if(cCore.ram.script != NULL)
+    {
+        removeAllDoubleLinkedList(scriptEditorLines);
+        scriptEditorLines = scriptToDoubleLinkedList(cCore.ram.script);
+        scriptEditorCursor = scriptEditorLines;
+        rowCursor = 0;
+        lineCursor = 0;
+        savedRowCursor = 0;
+    }
+}
 
 void detectInput()
 {
@@ -67,28 +131,30 @@ void detectInput()
     }
     else if(IsKeyPressed(KEY_ENTER) || IsKeyPressedRepeat(KEY_ENTER))
     {
-        int tabCounter = 0;
-        int i = 0;
-        while(i < ((flexString*)scriptEditorCursor->data)->byteUsed && ((flexString*)scriptEditorCursor->data)->string[i] == '\t')
-        {
-            tabCounter++;
-            i++;
-        }
-        flexString *newLine = newFlexString("");
-        insertCharsInFlexString(newLine,((flexString*)scriptEditorCursor->data)->string+rowCursor,0,strlen(((flexString*)scriptEditorCursor->data)->string)-rowCursor);
-        scriptEditorCursor->data = removeFlexStringInFlexString(scriptEditorCursor->data,rowCursor,strlen(((flexString*)scriptEditorCursor->data)->string)-rowCursor);
+        if (scriptEditorCursor != NULL && scriptEditorCursor->data != NULL) {
+            int tabCounter = 0;
+            int i = 0;
+            while(i < ((flexString*)scriptEditorCursor->data)->byteUsed && ((flexString*)scriptEditorCursor->data)->string[i] == '\t')
+            {
+                tabCounter++;
+                i++;
+            }
+            flexString *newLine = newFlexString("");
+            newLine = insertCharsInFlexString(newLine,((flexString*)scriptEditorCursor->data)->string+rowCursor,0,strlen(((flexString*)scriptEditorCursor->data)->string)-rowCursor);
+            scriptEditorCursor->data = removeFlexStringInFlexString(scriptEditorCursor->data,rowCursor,strlen(((flexString*)scriptEditorCursor->data)->string)-rowCursor);
 
-        doubleLinkedList *newLineNode = newDoubleLinkedList(newLine);
-        insertAfterDoubleLinkedList( scriptEditorCursor, newLineNode);
-        scriptEditorCursor = newLineNode;
-        rowCursor = 0;
-        for(int i = 0; i < tabCounter; i++)
-        {
-            scriptEditorCursor->data = insertCharsInFlexString(scriptEditorCursor->data,"\t",0,1);
-            rowCursor++;
+            doubleLinkedList *newLineNode = newDoubleLinkedList(newLine);
+            insertAfterDoubleLinkedList( scriptEditorCursor, newLineNode);
+            scriptEditorCursor = newLineNode;
+            rowCursor = 0;
+            for(int i = 0; i < tabCounter; i++)
+            {
+                scriptEditorCursor->data = insertCharsInFlexString(scriptEditorCursor->data,"\t",0,1);
+                rowCursor++;
+            }
+            savedRowCursor =rowCursor;
+            lineCursor++;
         }
-        savedRowCursor =rowCursor;
-        lineCursor++;
         return;
     }
     else if(IsKeyPressed(KEY_UP) || IsKeyPressedRepeat(KEY_UP))
@@ -245,9 +311,7 @@ void scriptEditorLoop()
 {
     if(scriptEditorLines == NULL)
     {
-        scriptEditorLines = newDoubleLinkedList(newFlexString("ciao"));
-        
-
+        scriptEditorLines = newDoubleLinkedList(newFlexString(""));
     }
     if(scriptEditorCursor == NULL)
     {

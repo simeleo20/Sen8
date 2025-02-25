@@ -8,6 +8,7 @@
 #include <lauxlib.h>
 #include "core.h"
 #include <unistd.h>
+#include "editor/scriptEditor.h"
 
 printMem prints;
 int endTextYAbs = 0;
@@ -44,8 +45,8 @@ char* getBaseFolder() {
 }
 
 
-cstring baseFolder;
-cstring localPath = "";
+string baseFolder;
+string localPath = "";
 
 
 
@@ -54,7 +55,8 @@ command commands[] = {
     {"cd", execCd},
     {"mk", execMk},
     {"load", execLoad},
-    {"save", execSave}
+    {"save", execSave},
+    {"run", execRun}
 };
 #define commandsSize (sizeof(commands)/sizeof(command))
 
@@ -178,13 +180,15 @@ int arrIInside(int i, int size)
 
 void drawPrints()
 {
-    int start = prints.bottomPtr;
+    int start = arrIInside(prints.bottomPtr,maxConsoleLines);
     //printf("end text %d\n", endTextYAbs);
-    for(int i = ((endTextYAbs < 33)? endTextYAbs : 33 ); i >= 0; i--)
+    for(int i = ((endTextYAbs < 32)? endTextYAbs : 32 ); i >= 0; i--)
     {
         printS(0,2+ i*7, 7, prints.lines[start]);
         start = arrIInside(start-1,maxConsoleLines);
     }
+    int i = ((endTextYAbs < 33)? endTextYAbs : 33 );
+    printC(0,2+ i*7, '>', 7, 10);
     
 }
 int i =0 ;
@@ -194,7 +198,6 @@ void conSetup()
     if(i==0)
     {
         baseFolder = getBaseFolder();
-        print(">");
         printf(GetWorkingDirectory());
         printf("\n");
         printf(getUserFolder);
@@ -275,9 +278,10 @@ int execCd(cstring str)
     {
         i++;
     }
-    strcpy(str, str+i);
+
+    //strcpy(str, str+i);
     
-    if(ChangeDirectory(str))
+    if(ChangeDirectory(str+i))
     {
 
         if(memcmp(GetWorkingDirectory(), baseFolder, strlen(baseFolder)) != 0)
@@ -304,8 +308,8 @@ int execMk(cstring str)
     {
         i++;
     }
-    strcpy(str, str+i);
-    if(MakeDirectory(str))
+    //strcpy(str, str+i);
+    if(MakeDirectory(str+i))
     {
         print("Directory not created\n");
         return -1;
@@ -325,13 +329,40 @@ int execLoad(cstring str)
     {
         i++;
     }
-    strcpy(str, str+i);
-
-    cstring ext = GetFileExtension(str);
+    //strcpy(str, str+i);
+    bool found = false;
+    cstring ext = GetFileExtension(str+i);
+    string newStr = (string)str;
+    if(ext == NULL)
+    {
+        FilePathList list = LoadDirectoryFiles(".");
+        s32 strLen = strlen(newStr+i);
+        print("Searching file without extension: %s\n", newStr+i);
+        for(int j = 0; j < list.count; j++)
+        {
+            
+            if(strncmp(GetFileName(list.paths[j]), newStr+i, strLen) == 0)
+            {
+                newStr = malloc(i+strlen(GetFileName(list.paths[j]))+1);
+                strcpy(newStr, str);
+                strcpy(newStr+i ,GetFileName(list.paths[j]));
+                ext = GetFileExtension(newStr);
+                found = true;
+                print("File found\n");
+                break;
+            }
+        }
+        if(!found)
+        {
+            print("File not found\n");
+            return -1;
+        }
+        UnloadDirectoryFiles(list);
+    }
     if(strcmp(ext, ".sen") == 0)
     {
 
-        cstring fileChars = LoadFileText(str);
+        cstring fileChars = LoadFileText(newStr+i);
         if(fileChars == NULL)
         {
             print("File not found\n");
@@ -340,15 +371,17 @@ int execLoad(cstring str)
 
         print("loaded sen file\n");
         loadSenString(fileChars);
+        return 1;
     }
     else if(strcmp(ext, ".bin")==0||strcmp(ext, ".cart")==0)
     {
         int size;
-        unsigned char *data = LoadFileData(str, &size);
+        unsigned char *data = LoadFileData(newStr+i, &size);
 
         if(data == NULL)
         {
             print("File not found\n");
+            printf("file: %s\n", newStr+i);
             return -1;
         }
 
@@ -359,8 +392,8 @@ int execLoad(cstring str)
         cartridge.script = script;
 
         loadCart(&cartridge);
-        
         free(data);
+        loadScriptFromRam();
         print("loaded cartridge\n");
         return 1;
     }
@@ -375,7 +408,7 @@ int execSave(cstring str)
     {
         i++;
     }
-    strcpy(str, str+i);
+    //strcpy(str, str+i);
     
     
     cart cartridge;
@@ -390,9 +423,14 @@ int execSave(cstring str)
     unsigned char *data = malloc(scriptSize + sizeof(cart)-sizeof(cstring));
     memcpy(data, &cartridge, sizeof(cart)-sizeof(cstring));
     memcpy(data+sizeof(cart)-sizeof(cstring), cartridge.script, scriptSize);
-    SaveFileData(str, data, scriptSize + sizeof(cart)-sizeof(cstring));
+    SaveFileData(str+i, data, scriptSize + sizeof(cart)-sizeof(cstring));
     free(data);
     print("saved\n");
+}
+int execRun(cstring str)
+{
+    startRunning();
+    return 1;
 }
 
 int tryExecCode(cstring str)
@@ -418,15 +456,15 @@ void detectWrite()
 {
     if(IsKeyPressed(257) || IsKeyPressedRepeat(257))
     {
-        cstring str = charNodesToString(head);
-        
+        string str = charNodesToString(head);
+        print("\n");
+        print(">");
         print(str);
         print("\n");
         
         if(str[0] == '\0')
         {
             free(str);
-            print(">");
             return;
         }
         head = deleteAllCharNodes(head);
@@ -447,7 +485,6 @@ void detectWrite()
         {
             localPath = "";
         }
-        print(">");
         
         return;
     }
@@ -490,7 +527,7 @@ void detectWrite()
     {
         if(IsKeyPressed(KEY_C))
         {
-            cstring str = charNodesToString(head);
+            string str = charNodesToString(head);
             SetClipboardText(str);
             free(str);
             return;
@@ -498,7 +535,7 @@ void detectWrite()
         else if(IsKeyPressed(KEY_V))
         {
             printf("v\n");
-            string str = GetClipboardText();
+            cstring str = GetClipboardText();
             for(int i = 0; i < strlen(str); i++)
             {
                 printf("%c\n", str[i]);

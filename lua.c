@@ -4,6 +4,7 @@
 #include "lua.h"
 #include "core.h"
 #include "graphics.h"
+#include "console.h"
 
 
 
@@ -216,6 +217,12 @@ int luaPrintS(lua_State *L)
     printS(x, y, color, str);
     return 0; // number of results
 }
+int luaPrint(lua_State *L)
+{
+    cstring str = lua_tostring(L, -1);
+    print(str);
+    return 0; // number of results
+}
 void registerFunctions(lua_State *L)
 {
     lua_register(L, "bgSet", luaBgSet);
@@ -239,6 +246,7 @@ void registerFunctions(lua_State *L)
     lua_register(L, "saveSprites", luaSaveSprites);
     lua_register(L, "loadTilesData", luaLoadTilesData);
     lua_register(L, "printS", luaPrintS);
+    lua_register(L, "print", luaPrint);
 }
 
 
@@ -257,10 +265,18 @@ void initLua(core *cCore)
     cCore->loop = execLuaLoop;
     cCore->vblank = execLuaVBLANK;
     cCore->close = closeLua;
+    cCore->resetVM = restartLua;
 }
 void closeLua(core *cCore)
 {
     lua_close(cCore->vm.L);
+}
+void restartLua(core *cCore)
+{
+    printf("lua restarting\n");
+    closeLua(cCore);
+    initLua(cCore);
+    printf("lua restarted\n");
 }
 
 
@@ -283,7 +299,7 @@ void execLuaLoop(core *cCore)
     else
     {
         lua_pop(cCore->vm.L, 1);
-        printf("Loop not found!!!\n");
+        stopRunning();
     }
 }
 void execLuaSetup(core *cCore)

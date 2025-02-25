@@ -342,14 +342,43 @@ void populateBG()
     }
 }
 
+void createVM()
+{
+    if(cCore.ram.language == LUA)
+    {
+        initLua(&cCore);
+    }
+}
 
-void initScreen()
+void startRunning()
+{
+    extern int currentPage;
+    if(cCore.resetVM == NULL)
+    {
+        createVM(&cCore);
+    }
+    else {
+        cCore.resetVM(&cCore);
+    }
+    currentPage = RUNTIME;
+    cCore.running = true;
+    resetScreen();
+    coreSetup();
+}
+
+void stopRunning()
+{
+    extern int currentPage;
+    currentPage = CONSOLE;
+    cCore.running = false;
+}
+
+void resetScreen()
 {
 
     cCore.ram.scrollX = 0;
     cCore.ram.scrollY = 0;
     cCore.ram.transparent = 0;
-    cCore.ram.script = "";
     cls();
     resetBgMap();
     for(int x = 0; x < 256; x++)
@@ -373,16 +402,7 @@ void initScreen()
     }
     //setup bgmem
 
-    for(int i = 0; i < 256; i++)
-    {
-        for(int j = 0; j < 8; j++)
-        {
-            for(int k = 0; k < 8; k++)
-            {
-                cCore.ram.bgTilesMem[i][j][k] = cCore.ram.transparent;
-            }
-        }
-    }
+
     /*
     for(int i = 0; i < 8; i++) {
         for(int j = 0; j < 8; j++) {
