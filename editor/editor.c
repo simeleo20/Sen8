@@ -4,12 +4,19 @@
 #include <stdio.h>
 #include "tileEditor.h"
 #include "scriptEditor.h"
-
+#include "../os.h"
 extern core cCore;
 
 Vector2 mousePos;
 
+shortCut editorShortCuts[] = {
+};
+#define editorShortCutsSize 0
+
+
+
 int editorPage = SCRIPT_EDITOR;
+
 
 void button(int x, int y, u8 w, u8 h, void (*draw)(int,int), void (*callback)(void))
 {
@@ -161,6 +168,14 @@ void changeToTileEditor()
 {
     editorPage = TILE_EDITOR;
 }
+void setTilePage()
+{
+    editorPage = TILE_EDITOR;
+}
+void setScriptPage()
+{
+    editorPage = SCRIPT_EDITOR;
+}
 
 
 int editorLoop()
@@ -174,7 +189,7 @@ int editorLoop()
 
     button(0, 0, 16,16, drawScriptIcon, changeToScriptEditor);
     button(16, 0, 16,16, drawTileIcon, changeToTileEditor);
-
+    detectShortCut(editorShortCuts,editorShortCutsSize);
     if(editorPage == TILE_EDITOR)
     {
         tileEditorLoop();

@@ -103,7 +103,7 @@ int main(void)
     InitWindow(256, 240, "Fantasy Console");
     // This should use the flag FLAG_FULLSCREEN_MODE which results in a possible ToggleFullscreen() call later on
     SetWindowState(FLAG_WINDOW_RESIZABLE);
-    SetExitKey(KEY_F1);
+    SetExitKey(KEY_NULL);
     // Request a texture to render to. The size is the screen size of the raylib example.
     RenderTexture2D renderTexture = LoadRenderTexture(screenWidth, screenHeight);
     coreSetup();

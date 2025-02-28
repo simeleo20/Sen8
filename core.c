@@ -6,6 +6,7 @@
 #include "raylib.h"
 #include "os.h"
 #include <stdio.h>
+#include "./editor/scriptEditor.h"
 
 // colors palette
 const rgb palette[16] = {
@@ -352,6 +353,7 @@ void createVM()
 
 void startRunning()
 {
+    loadScriptToRam();
     extern int currentPage;
     if(cCore.resetVM == NULL)
     {

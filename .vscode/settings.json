@@ -30,6 +30,10 @@
     "editor.h": "c",
     "os.h": "c",
     "lua.h": "c",
-    "scripteditor.h": "c"
+    "scripteditor.h": "c",
+    "deque": "c",
+    "string": "c",
+    "unordered_map": "c",
+    "text_encoding": "c"
   }
 }

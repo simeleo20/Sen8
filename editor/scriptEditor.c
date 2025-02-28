@@ -16,6 +16,36 @@ Vector2 camPos = {0,0};
 extern core cCore;
 string lastScript;
 
+string luaKeywords[] = {
+    "end",
+    "function", 
+    "local", 
+    "if", 
+    "else", 
+    "elseif", 
+    "in", 
+    "do", 
+    "and", 
+    "not",
+    "or", 
+    "for", 
+    "nil", 
+    "break", 
+    "false", 
+    "repeat", 
+    "return", 
+    "then", 
+    "true", 
+    "until", 
+    "while",
+    ""
+};
+
+u8 luaKeywordsCount =21;
+
+
+
+
 string getScriptEditorText()
 {
     flexString *out = newFlexString("");
@@ -235,6 +265,65 @@ void detectInput()
         savedRowCursor = rowCursor;
     }
 }
+bool isUsableWordsChar(char c)
+{
+    return (c >= 'a' && c <= 'z') 
+    || 
+    (c>='A' && c <='Z')
+    ||
+    (c>='0' && c <='9')
+    ||
+    c=='_';
+}
+
+// return keyword len
+u64 therIsKeyword(string startingPoint)
+{
+    string *keywords;
+    u8 keywordsCount;
+    if(cCore.ram.language == LUA) 
+    {
+        keywords = luaKeywords;
+        keywordsCount = luaKeywordsCount;
+    }
+    bool found = false;
+    u64 i;
+    for(u8 j = 0; j< keywordsCount; j++)
+    {
+        i=0;
+        bool isThisKeyword = true;
+        while(isUsableWordsChar(startingPoint[i]))
+        {
+            if(keywords[j][i] == '\0') 
+            {
+                isThisKeyword = false;
+                break;
+            }
+            else if(startingPoint[i]!= keywords[j][i])
+            {
+                isThisKeyword = false;
+                break;
+            }
+            i++;
+        }
+        if(i>0 && isThisKeyword == true && keywords[j][i]=='\0' )
+        {
+            return i;
+        }
+    }
+    return 0;
+}
+u64 therIsNumber(string startingPoint)
+{
+    u64 i = 0;
+    while(startingPoint[i] >= '0' && startingPoint[i] <='9')
+    {
+        i++;
+    }
+    return i;
+}
+
+
 void drawText()
 {
     static int frameCounter = 0;
@@ -270,25 +359,102 @@ void drawText()
     // camPos.y = (cursorY-232)>0 ? cursorY-232 : 0;
     doubleLinkedList *current = scriptEditorLines;
     int i = 0;
+    u8 color = _WHITE;
     while(current != NULL)
     {
         flexString *line = current->data;
+        u64 remainingColoredChar = 0;
+        bool isNumber=false;
+        bool isString=false;
+        bool wasString = false;
+        bool isNotUsable;
         for(int j = 0; j < line->byteUsed; j++)
         {
-            
-            char c = line->string[j];
-            u8 color = _WHITE;
-            if(j == rowCursor && i == lineCursor && drawSelector)
-            {
-                color = _BLACK;
-            }
             int cX = xOff+(j*6)-camPos.x;
             int cY = yOff+(i*6)-camPos.y;
+            
+            if(remainingColoredChar == 0)
+            {
+                isNumber = false;
+                isNotUsable = false;
+            }
+
+            if(line->string[j] == '"')
+            {
+                if(j==0 || (line->string[j-1]!='\\'))
+                {
+                    isString = !isString; 
+                    if(isString == false) wasString = true;
+                }
+            }
+            if(!isString)
+            {
+                if(remainingColoredChar<= 0  )
+                {
+                    if(!isUsableWordsChar(line->string[j]))
+                    {
+                        remainingColoredChar = 1;
+                        isNotUsable=true;
+                    }
+                    else if(  j>=0 && ( (j==0) ? true : (!isUsableWordsChar(line->string[j-1]))))
+                    {
+                        remainingColoredChar = therIsKeyword(line->string+j);
+                        if(remainingColoredChar == 0)
+                        {
+                            remainingColoredChar = therIsNumber(line->string+j);
+                            if(remainingColoredChar != 0)
+                            {
+                                isNumber = true;
+                            }
+                            
+                        }
+                    }
+                    
+
+                }
+            }
+
             if(cX > -6 && cX < 256 && cY-yOff > -6 && cY-yOff < yLimit)
             { 
+                char c = line->string[j];
+                
+                
+                if(isString)
+                {
+                    color = _GREEN;
+                }
+                else if(wasString)
+                {
+                    color = _GREEN;
+                    wasString = false;
+                }
+                else if(remainingColoredChar > 0)
+                {
+                    if(isNumber)
+                    {
+                        color = _YELLOW;
+                    }
+                    else if(isNotUsable)
+                    {
+                        color = _LIGHT_GREY;
+                    }
+                    else
+                    {
+                        color = _RED;
+                    }
+                }
+                else
+                {
+                    color = _WHITE;
+                }
+                
                 printC(cX,cY,c,color,10);
             }
-            
+            if(remainingColoredChar>0)
+            {
+                remainingColoredChar--;
+            }
+
 
         }
 
@@ -296,7 +462,7 @@ void drawText()
         current = current->next;
     }
     if(drawSelector)
-    drawRectFilled(xOff+(rowCursor*6)-camPos.x,yOff+(lineCursor*6)-camPos.y,6,6,_WHITE,6);
+    drawRectFilled(xOff+(rowCursor*6)-camPos.x,yOff+(lineCursor*6)-camPos.y,6,6,_BLUE,6);
 
 
 
