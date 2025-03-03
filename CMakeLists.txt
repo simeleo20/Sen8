@@ -1,8 +1,9 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.20)
 project(Sen8)
 
 
 
+find_package(Lua REQUIRED)
 include_directories(${LUA_INCLUDE_DIR})
 
 #Dependencies

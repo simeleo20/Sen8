@@ -3,6 +3,10 @@
 #include "graphics.h"
 #include "customLog.h"
 #include "os.h"
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
+
 
 int screenWidth = 256;
 int screenHeight = 240;
@@ -13,6 +17,8 @@ float newScreenWidth;
 float newScreenHeight;
 
 u8 previousScreen[240][256];
+
+RenderTexture2D renderTexture;
 
 void putPixel(u8 x, u8 y, u8 color)
 {
@@ -94,67 +100,79 @@ int getCharPressed()
     return GetCharPressed();
 }
 
+void UpdateDrawFrame(void)
+{
+    osLoop();
+    corePPUDraw();
+
+    // Instead of using BeginDrawing() we render to the render texture. Everything else stays unchanged
+    BeginTextureMode(renderTexture);
+    //ClearBackground(RAYWHITE);
+    drawScreen();
+    
+    // We need to end the texture mode separately
+    EndTextureMode();
+
+    //calc the new screen size without deformation
+    float tryheight = (float)GetScreenWidth() * screenHeight / screenWidth;
+    float trywidth = (float)GetScreenHeight() * screenWidth / screenHeight;
+    if(tryheight <= GetScreenHeight()){
+        newScreenWidth = GetScreenWidth();
+        newScreenHeight = tryheight;
+    }else{
+        newScreenWidth = trywidth;
+        newScreenHeight = GetScreenHeight();
+    }
+    
+    // Let's draw the texture. The source rect is the size of the texture, the destination rect is of the same size as the screen. For some reason, the texture was flipped vertically, so I had to invert the source rects "height" to flip the UV.
+    BeginDrawing();
+    
+    DrawTexturePro(
+        renderTexture.texture,
+        (Rectangle){ 0, 0, (float)renderTexture.texture.width, (float)-renderTexture.texture.height },
+        (Rectangle){ ((float)GetScreenWidth() - newScreenWidth)/2, ((float)GetScreenHeight()- newScreenHeight)/2, newScreenWidth, newScreenHeight },
+        (Vector2){ 0, 0 },
+        0,
+        WHITE);
+    EndDrawing();
+    
+
+    coreLoop();
+    
+    // VBLANK
+    coreVBLANK();
+    
+
+    //printf("Width: %d, Height: %d\n", GetScreenWidth(), GetScreenHeight());
+    //Vector2 mousePosition = calcMousePosition();
+    //printf("Mouse Position: [%f, %f]\n", mousePosition.x, mousePosition.y);
+}
+
 int main(void)
 {
     
     resetScreen();
-    SetTargetFPS(60);
     SetTraceLogCallback(CustomLog);
     InitWindow(256, 240, "Fantasy Console");
     // This should use the flag FLAG_FULLSCREEN_MODE which results in a possible ToggleFullscreen() call later on
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetExitKey(KEY_NULL);
     // Request a texture to render to. The size is the screen size of the raylib example.
-    RenderTexture2D renderTexture = LoadRenderTexture(screenWidth, screenHeight);
+    renderTexture = LoadRenderTexture(screenWidth, screenHeight);
     coreSetup();
     setupPreviousScreen();
-    while (!WindowShouldClose())
+    #if defined(PLATFORM_WEB)
+    emscripten_set_main_loop(UpdateDrawFrame, 0, 1);
+#else
+    SetTargetFPS(60);   // Set our game to run at 60 frames-per-second
+    //--------------------------------------------------------------------------------------
+
+    // Main game loop
+    while (!WindowShouldClose())    
     {
-        osLoop();
-        corePPUDraw();
-
-        // Instead of using BeginDrawing() we render to the render texture. Everything else stays unchanged
-        BeginTextureMode(renderTexture);
-        //ClearBackground(RAYWHITE);
-        drawScreen();
-        
-        // We need to end the texture mode separately
-        EndTextureMode();
-
-        //calc the new screen size without deformation
-        float tryheight = (float)GetScreenWidth() * screenHeight / screenWidth;
-        float trywidth = (float)GetScreenHeight() * screenWidth / screenHeight;
-        if(tryheight <= GetScreenHeight()){
-            newScreenWidth = GetScreenWidth();
-            newScreenHeight = tryheight;
-        }else{
-            newScreenWidth = trywidth;
-            newScreenHeight = GetScreenHeight();
-        }
-        
-        // Let's draw the texture. The source rect is the size of the texture, the destination rect is of the same size as the screen. For some reason, the texture was flipped vertically, so I had to invert the source rects "height" to flip the UV.
-        BeginDrawing();
-        
-        DrawTexturePro(
-            renderTexture.texture,
-            (Rectangle){ 0, 0, (float)renderTexture.texture.width, (float)-renderTexture.texture.height },
-            (Rectangle){ ((float)GetScreenWidth() - newScreenWidth)/2, ((float)GetScreenHeight()- newScreenHeight)/2, newScreenWidth, newScreenHeight },
-            (Vector2){ 0, 0 },
-            0,
-            WHITE);
-        EndDrawing();
-        
-
-        coreLoop();
-        
-        // VBLANK
-        coreVBLANK();
-        
-
-        //printf("Width: %d, Height: %d\n", GetScreenWidth(), GetScreenHeight());
-        //Vector2 mousePosition = calcMousePosition();
-        //printf("Mouse Position: [%f, %f]\n", mousePosition.x, mousePosition.y);
+        UpdateDrawFrame();
     }
+#endif
 
     // Unload the texture handle again to make a clean exit.
     UnloadRenderTexture(renderTexture);
