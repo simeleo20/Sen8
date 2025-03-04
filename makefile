@@ -16,7 +16,7 @@ $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 web:
-	emcc -o game.html $(filter %.c,$(SRC)) -Os $(CFLAGS) "C:\raylib\raylib\src\web\libraylib.a" "./lib/lua/liblua.a" -L"C:/raylib/raylib/src" -I"C:/raylib/raylib/src" -I"C:/emsdk/emsdk-4.0.3/upstream/emscripten/cache/sysroot/include" -s USE_GLFW=3 -s --shell-file "./minshell.html" -DPLATFORM_WEB "-lidbfs.js" -s ALLOW_MEMORY_GROWTH=1 
+	emcc -o index.html $(filter %.c,$(SRC)) -Os $(CFLAGS) "C:\raylib\raylib\src\web\libraylib.a" "./lib/lua/liblua.a" -L"C:/raylib/raylib/src" -I"C:/raylib/raylib/src" -I"C:/emsdk/emsdk-4.0.3/upstream/emscripten/cache/sysroot/include" -s USE_GLFW=3 -s --shell-file "./minshell.html" -DPLATFORM_WEB "-lidbfs.js" -s ALLOW_MEMORY_GROWTH=1 
 
 clean:
 	del /f $(TARGET).exe $(subst /,\,$(OBJ))
