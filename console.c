@@ -28,7 +28,7 @@ extern core cCore;
     #define getUserFolder getenv("HOME")
     #define slash "/"
 #elif PLATFORM_WEB
-    #define getUserFolder "/"
+    #define getUserFolder ""
     #define slash "/"
 #endif
 
@@ -184,10 +184,10 @@ void drawPrints()
     for(int i = ((endTextYAbs < 32)? endTextYAbs : 32 ); i >= 0; i--)
     {
         printS(0,2+ i*7, 7, prints.lines[start]);
+        
         start = arrIInside(start-1,maxConsoleLines);
     }
-    int i = ((endTextYAbs < 33)? endTextYAbs : 33 );
-    printC(0,2+ i*7, '>', 7, 10);
+
     
 }
 int i =0 ;
@@ -240,16 +240,19 @@ void drawInWriting()
     string str = charNodesToString(head);
     int endTextRel = ((endTextYAbs < 33)? endTextYAbs : 33 );
     int localPathLen = strlen(localPath);
-    printS((localPathLen*6)+6, 2+endTextRel*7, 7, str);
+    //printS(0,2+endTextRel*7, _WHITE, localPath);
+    printS((localPathLen*6)+6, 2+endTextRel*7, _WHITE, str);
     if(countWrite % 40 < 20)
     {
-        
-        drawRectFilled((localPathLen*6)+5+cursor*6, 1+endTextRel*7, 7, 7, 7, 10);
-        printC((localPathLen*6)+6+cursor*6, 2+endTextRel*7, str[cursor], 0, 20);
+        drawRectFilled((localPathLen*6)+5+cursor*6, 1+endTextRel*7, 7, 7, _WHITE, 10);
+        printC((localPathLen*6)+6+cursor*6, 2+endTextRel*7, str[cursor], _BLACK, 20);
     }
     free(str);
+    
     lastCursor = cursor;
     countWrite++;
+    printC(localPathLen*6,2+ endTextRel*7, '>', 7, 10);
+    printS(0,2+ endTextRel*7,_WHITE,localPath);
 }
 
 int execLs(cstring str)
@@ -282,7 +285,6 @@ int execCd(cstring str)
     
     if(ChangeDirectory(str+i))
     {
-
         if(memcmp(GetWorkingDirectory(), baseFolder, strlen(baseFolder)) != 0)
         {
             ChangeDirectory(baseFolder);
@@ -457,6 +459,7 @@ void detectWrite()
     {
         string str = charNodesToString(head);
         print("\n");
+        print(localPath);
         print(">");
         print(str);
         print("\n");
@@ -478,7 +481,6 @@ void detectWrite()
         {
             localPath = malloc(strlen(GetWorkingDirectory()) - strlen(baseFolder) + 1);
             strcpy(localPath, GetWorkingDirectory() + strlen(baseFolder)+1);
-            print(localPath);
         }
         else
         {
@@ -533,11 +535,9 @@ void detectWrite()
         }
         else if(IsKeyPressed(KEY_V))
         {
-            printf("v\n");
             cstring str = GetClipboardText();
             for(int i = 0; i < strlen(str); i++)
             {
-                printf("%c\n", str[i]);
                 head = insertCharNode(head, cursor, str[i]);
                 cursor++;
             }

@@ -257,9 +257,12 @@ void initLua(core *cCore)
     cCore->vm.L = luaL_newstate();
     luaL_openlibs(cCore->vm.L);
     registerFunctions(cCore->vm.L);
-    if (luaL_dostring(cCore->vm.L, cCore->ram.script) != LUA_OK) {
-        fprintf(stderr, "Error: %s\n", lua_tostring(cCore->vm.L, -1));
-        lua_pop(cCore->vm.L, 1);
+    if(cCore->ram.script!= NULL)
+    {
+        if (luaL_dostring(cCore->vm.L, cCore->ram.script) != LUA_OK) {
+            fprintf(stderr, "Error: %s\n", lua_tostring(cCore->vm.L, -1));
+            lua_pop(cCore->vm.L, 1);
+        }
     }
     cCore->setup = execLuaSetup;
     cCore->loop = execLuaLoop;

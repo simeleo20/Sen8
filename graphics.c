@@ -5,6 +5,12 @@
 #include "os.h"
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
+EM_JS(int, getInnerWidth, (), {
+    return window.innerWidth;
+});
+EM_JS(int, getInnerHeight, (), {
+    return window.innerHeight;
+});
 #endif
 
 
@@ -102,6 +108,9 @@ int getCharPressed()
 
 void UpdateDrawFrame(void)
 {
+    #if defined(PLATFORM_WEB)
+    SetWindowSize(GetRenderWidth(), GetRenderHeight());
+    #endif
     osLoop();
     corePPUDraw();
 
@@ -153,7 +162,12 @@ int main(void)
     
     resetScreen();
     SetTraceLogCallback(CustomLog);
-    InitWindow(256, 240, "Fantasy Console");
+    
+    #if defined(PLATFORM_WEB)
+        InitWindow(getInnerWidth(),getInnerHeight(), "Fantasy Console");
+    #else
+        InitWindow(256, 240, "Fantasy Console");
+    #endif
     // This should use the flag FLAG_FULLSCREEN_MODE which results in a possible ToggleFullscreen() call later on
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetExitKey(KEY_NULL);
@@ -162,6 +176,26 @@ int main(void)
     coreSetup();
     setupPreviousScreen();
     #if defined(PLATFORM_WEB)
+    ToggleBorderlessWindowed();
+    printf("Hello, world!\n");
+    EM_ASM(
+            // Make a directory other than '/'
+            FS.mkdir('/Sen8');
+            // Then mount with IDBFS type
+            FS.mount(IDBFS, {
+                autoPersist: true
+            }, '/Sen8');
+                
+            FS.syncfs(true, function (err) {
+                if (err) {
+                    console.error('Error during initial sync:', err);
+                } else {
+                    console.log('Initial sync complete');
+                }
+            });
+            
+        );
+        //ChangeDirectory("/Sen8");
     emscripten_set_main_loop(UpdateDrawFrame, 0, 1);
 #else
     SetTargetFPS(60);   // Set our game to run at 60 frames-per-second
@@ -177,7 +211,6 @@ int main(void)
     // Unload the texture handle again to make a clean exit.
     UnloadRenderTexture(renderTexture);
 
-    coreClose();
 
     CloseWindow();
 

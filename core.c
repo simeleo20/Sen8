@@ -29,7 +29,7 @@ const rgb palette[16] = {
 };
 
 //current core
-core cCore;
+core cCore = {0};
 //size 127*8
 char font[] = {
 #include "font.inl"
@@ -78,8 +78,9 @@ void coreSetup()
     free(cCore.ram.script);
     cCore.ram.script = fileToString("editor.lua");
     loadTiles();
-    initLua(&cCore);
     */
+    initLua(&cCore);
+    
     
 
     
@@ -570,13 +571,33 @@ int loadSenString(cstring fileChars)
 
 }
 
+void setZeroRam(mem *ram)
+{
+    ram->transparent=0;
+    ram->scrollX = 0;
+    ram->scrollY = 0;
+    ram->script = NULL;
+    memset(ram->bgMap,0,sizeof(ram->bgMap));
+
+}
+
 int loadCart(cart *cartridge)
 {
+    
     core newCore;
+    setZeroRam(&(newCore.ram));
     newCore.ram.language = cartridge->language;
     newCore.ram.script = cartridge->script;
+    printf("tra %d\n",newCore.ram.transparent);
+    
+
+
+
+
+    
     memcpy(newCore.ram.bgTilesMem, cartridge->bgTilesMem, sizeof(newCore.ram.bgTilesMem));
     memcpy(newCore.ram.spritesTileMem, cartridge->spritesTileMem, sizeof(newCore.ram.spritesTileMem));
+
     initLua(&newCore);
     newCore.running = false;
     cCore = newCore;
