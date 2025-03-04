@@ -25,6 +25,7 @@ void button(int x, int y, u8 w, u8 h, void (*draw)(int,int), void (*callback)(vo
     {
         if(IsMouseButtonDown(MOUSE_LEFT_BUTTON))
         {
+            if(callback!=NULL)
             callback();
         }
     }
