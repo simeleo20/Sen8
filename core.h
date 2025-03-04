@@ -80,6 +80,7 @@ typedef struct {
             string script;
             u8 language;
             u8 transparent;
+            string path;
         };
         u8 data[MEM_SIZE];
         

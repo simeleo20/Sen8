@@ -30,6 +30,7 @@ typedef struct
 {
     cstring keyWord;
     int (*exec)(cstring);
+    cstring shortDescr;
 }command;
 
 
@@ -37,12 +38,15 @@ void print(cstring str, ...)  __attribute__ ((format (printf, 1, 2)));
 void vprint(cstring str,va_list args);
 void consoleLoop();
 
+int execHelp(cstring str);
 int execLs(cstring str);
 int execCd(cstring str);
 int execMk(cstring str);
 int execLoad(cstring str);
 int execSave(cstring str);
 int execRun(cstring str);
-
-
+int execFolder(cstring str);
+#if defined(PLATFORM_WEB)
+int execDownload(cstring str);
+#endif
 #endif // CONSOLE_H

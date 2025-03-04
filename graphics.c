@@ -11,6 +11,7 @@ EM_JS(int, getInnerWidth, (), {
 EM_JS(int, getInnerHeight, (), {
     return window.innerHeight;
 });
+
 #endif
 
 

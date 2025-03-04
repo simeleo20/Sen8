@@ -8,6 +8,9 @@
 #include "core.h"
 #include <unistd.h>
 #include "editor/scriptEditor.h"
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+#endif
 
 printMem prints;
 int endTextYAbs = 0;
@@ -50,12 +53,17 @@ string localPath = "";
 
 
 command commands[] = {
-    {"ls", execLs},
-    {"cd", execCd},
-    {"mk", execMk},
-    {"load", execLoad},
-    {"save", execSave},
-    {"run", execRun}
+    {"help",execHelp,"help <topic>"},
+    {"ls", execLs,"ls"},
+    {"cd", execCd,"cd <dirName>"},
+    {"mk", execMk,"mk <dirName>"},
+    {"load", execLoad, "load <fileName>"},
+    {"save", execSave, "save <fileName>"},
+    {"run", execRun,"run"},
+    {"folder",execFolder,""},
+    #if defined(PLATFORM_WEB)
+    {"download",execDownload,"download <fileName>"}
+    #endif
 };
 #define commandsSize (sizeof(commands)/sizeof(command))
 
@@ -255,6 +263,15 @@ void drawInWriting()
     printS(0,2+ endTextRel*7,_WHITE,localPath);
 }
 
+int execHelp(cstring str)
+{
+    print("\n");
+    for(int i = 1; i<commandsSize;i++)
+    {
+        print("%s\n",commands[i].shortDescr);
+    }
+}
+
 int execLs(cstring str)
 {
     print("\n");
@@ -309,6 +326,11 @@ int execMk(cstring str)
     {
         i++;
     }
+    if(strncmp(str+i,"Sen8",4)==0)
+    {
+        print("Sen8 is a reserved Dir\n");
+        return -1;
+    }
     //strcpy(str, str+i);
     if(MakeDirectory(str+i))
     {
@@ -321,6 +343,75 @@ int execMk(cstring str)
         print("Directory created\n");
         return 1;
     }
+}
+string getFullPath(cstring str)
+{
+    cstring dirPath = GetWorkingDirectory();
+    int strLen = strlen(str);
+    int pathLen = strLen+strlen(dirPath);
+    string out = malloc(pathLen+2);
+    out[pathLen] = '\0';
+    strcpy(out,dirPath);
+    strcpy(out+strlen(dirPath),slash);
+    strcpy(out+strlen(dirPath)+1,str);
+    return out;
+}
+
+int load(cstring str)
+{
+
+    cstring ext = GetFileExtension(str);
+    if (ext && strcmp(ext, ".sen") == 0)
+    {
+        cstring fileChars = LoadFileText(str);
+        if (!fileChars)
+        {
+            print("File not found\n");
+            return -1;
+        }
+        print("Loaded .sen file\n");
+        loadSenString(fileChars);
+        return 1;
+    }
+    else if (ext && (strcmp(ext, ".bin") == 0 || strcmp(ext, ".cart") == 0))
+    {
+        int size = 0;
+        unsigned char *data = LoadFileData(str, &size);
+        if (!data)
+        {
+            print("File not found\n");
+            printf("File: %s\n", str);
+            return -1;
+        }
+        if (size < (int)(sizeof(cart) - sizeof(cstring)))
+        {
+            print("Invalid file size\n");
+            free(data);
+            return -1;
+        }
+        cart cartridge;
+        memcpy(&cartridge, data, sizeof(cart) - sizeof(cstring));
+        int scriptSize = size - (sizeof(cart) - sizeof(cstring));
+        string script = malloc(scriptSize + 1);
+        if (!script)
+        {
+            free(data);
+            print("Memory allocation failed\n");
+            return -1;
+        }
+        memcpy(script, data + (sizeof(cart) - sizeof(cstring)), scriptSize);
+        script[scriptSize] = '\0';
+        cartridge.script = script;
+
+        loadCart(&cartridge);
+        free(data);
+        loadScriptFromRam();
+        cCore.ram.path = getFullPath(str);
+        print("Loaded cartridge\n");
+        return 1;
+    }
+    print("Format not recognized\n");
+    return -1;
 }
 
 int execLoad(cstring str)
@@ -360,47 +451,14 @@ int execLoad(cstring str)
         }
         UnloadDirectoryFiles(list);
     }
-    if(strcmp(ext, ".sen") == 0)
+    int returnVal = load(newStr+i);
+    if(returnVal == 1)
     {
-
-        cstring fileChars = LoadFileText(newStr+i);
-        if(fileChars == NULL)
-        {
-            print("File not found\n");
-            return -1;
-        }
-
-        print("loaded sen file\n");
-        loadSenString(fileChars);
-        return 1;
+        cCore.ram.path = getFullPath(str+i);
     }
-    else if(strcmp(ext, ".bin")==0||strcmp(ext, ".cart")==0)
-    {
-        int size;
-        unsigned char *data = LoadFileData(newStr+i, &size);
-
-        if(data == NULL)
-        {
-            print("File not found\n");
-            printf("file: %s\n", newStr+i);
-            return -1;
-        }
-
-        cart cartridge;
-        memcpy(&cartridge, data, sizeof(cart)-sizeof(cstring));
-        string script = malloc(size - (sizeof(cart)-sizeof(cstring)));
-        memcpy(script, data+sizeof(cart)-sizeof(cstring), size - (sizeof(cart)-sizeof(cstring)));
-        cartridge.script = script;
-
-        loadCart(&cartridge);
-        free(data);
-        loadScriptFromRam();
-        print("loaded cartridge\n");
-        return 1;
-    }
-    print("format not recognized\n");
-    return -1;
+    return returnVal;
 }
+
 
 int execSave(cstring str)
 {
@@ -424,15 +482,49 @@ int execSave(cstring str)
     unsigned char *data = malloc(scriptSize + sizeof(cart)-sizeof(cstring));
     memcpy(data, &cartridge, sizeof(cart)-sizeof(cstring));
     memcpy(data+sizeof(cart)-sizeof(cstring), cartridge.script, scriptSize);
-    SaveFileData(str+i, data, scriptSize + sizeof(cart)-sizeof(cstring));
+    if(cCore.ram.path == NULL && str[i]=='\0')
+    {
+        print("File with no Name\n");
+    }
+    else if(cCore.ram.path == NULL || str[i]!='\0')
+    {
+        
+        if(SaveFileData(str+i, data, scriptSize + sizeof(cart)-sizeof(cstring)))
+        {
+            print("saved\n");
+        }
+        else
+        {
+            print("Error saving\n");
+        }
+        if(cCore.ram.path != NULL)
+            free(cCore.ram.path);
+            cCore.ram.path = getFullPath(str+i);
+        printf("path %s\n",cCore.ram.path);
+    }
+    else
+    {
+        if(SaveFileData(cCore.ram.path, data, scriptSize + sizeof(cart)-sizeof(cstring)))
+        {
+            print("saved\n");
+        }
+        else
+        {
+            print("Error saving\n");
+        }
+    }
     free(data);
-    print("saved\n");
 }
 int execRun(cstring str)
 {
     startRunning();
     return 1;
 }
+int execFolder(cstring str)
+{
+    print("%s\n",GetWorkingDirectory());
+}
+
 
 int tryExecCode(cstring str)
 {
@@ -451,6 +543,51 @@ int tryExecCode(cstring str)
         }
     }
     return 0;
+}
+#if defined(PLATFORM_WEB)
+int execDownload(cstring str)
+{
+    int i = 9;
+    while(str[i]==' ' && str[i]!='\0')
+    {
+        i++;
+    }
+    if(IsPathFile(str+i))
+    {
+        flexString *com = newFlexString("saveFileFromMEMFSToDisk(,)");
+        com = insertCharsInFlexString(com,"'",25,1);
+        com = insertCharsInFlexString(com,str+i,25,strlen(str+i));
+        com = insertCharsInFlexString(com,"'",25,1);
+        com = insertCharsInFlexString(com,"'",24,1);
+        com = insertCharsInFlexString(com,str+i,24,strlen(str+i));
+        com = insertCharsInFlexString(com,slash,24,1);
+        com = insertCharsInFlexString(com,GetWorkingDirectory(),24,strlen(GetWorkingDirectory()));
+        com = insertCharsInFlexString(com,"'",24,1);
+        printf("%s\n",com->string);
+
+        emscripten_run_script(com->string);
+        free(com);
+        print("File downloaded\n");
+        return 1;
+    }
+    else
+    {
+        print("File dosent exist\n");
+    }
+}
+#endif
+void checkDroppedFiles()
+{
+    if(IsFileDropped())
+    {
+        FilePathList list = LoadDroppedFiles();
+        for(int i = 0; i < list.count; i++)
+        {
+            printf("%s\n",list.paths[i]);
+        }
+        load(list.paths[0]);
+        UnloadDroppedFiles(list);
+    }
 }
 
 void detectWrite()
@@ -559,6 +696,7 @@ void consoleLoop()
 {
     conSetup();
     detectWrite();
+    checkDroppedFiles();
     
     drawPrints();
     
