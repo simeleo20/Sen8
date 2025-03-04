@@ -142,6 +142,23 @@ void drawTileSP(int x, int y, tile *t, bool transparency, s8 z)
         }
     }
 }
+//draw tile with screen position with flips
+void drawTileSPFlips(int x, int y, tile *t, bool transparency, s8 z, bool flipH, bool flipV)
+{
+    //printf("%d %d\n",flipH,flipV);
+    for(int i = 0; i < 8; i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            int srcX = (flipH==true) ? 7 - i : i;
+            int srcY = (flipV==true) ? 7 - j : j;
+            if((*t)[srcY][srcX] == cCore.ram.transparent && transparency) continue;
+
+            pixelToScreen(x + i, y + j, (*t)[srcY][srcX], z);
+        }
+    }
+}
+
 
 void drawBackground()
 {
@@ -150,8 +167,8 @@ void drawBackground()
         for(int x = 0; x < 64; x++)
         {
             bool transp = true;
-            if(cCore.ram.bgMap[y][x] == 0) transp = false;
-            drawTile(x, y, &cCore.ram.bgTilesMem[cCore.ram.bgMap[y][x]], transp, 0);
+            if(cCore.ram.bgMap[y][x] == 0) continue;;
+            drawTile(x, y, &cCore.ram.bgTilesMem[cCore.ram.bgMap[y][x]], transp, 5);
         }
     }
 }
@@ -161,7 +178,16 @@ void drawSprites()
     for(int i = 0; i < 64; i++)
     {
         sprite s = cCore.ram.sprites[i];
-        drawTileSP(s.x, s.y, &cCore.ram.spritesTileMem[s.tileIndex],true,10);
+        s8 z = 0;
+        if(s.priority)
+        {
+            z=10;
+        }
+        else
+        {
+            z=1;
+        }
+        drawTileSPFlips(s.x, s.y, &cCore.ram.spritesTileMem[s.tileIndex],true,z,s.flipH,s.flipV);
     }
 }
 
@@ -371,6 +397,7 @@ void startRunning()
 
 void stopRunning()
 {
+    resetScreen();
     extern int currentPage;
     currentPage = CONSOLE;
     cCore.running = false;

@@ -226,25 +226,25 @@ int luaPrint(lua_State *L)
 void registerFunctions(lua_State *L)
 {
     lua_register(L, "bgSet", luaBgSet);
-    lua_register(L, "bgGet", luaBgGet);
-    lua_register(L, "getMouseX", luaGetMouseX);
-    lua_register(L, "getMouseY", luaGetMouseY);
+    // lua_register(L, "bgGet", luaBgGet);
+    // lua_register(L, "getMouseX", luaGetMouseX);
+    // lua_register(L, "getMouseY", luaGetMouseY);
     lua_register(L, "btn", luaBtn);
     lua_register(L, "setScrollX", luaSetScrollX);
     lua_register(L, "setScrollY", luaSetScrollY);
-    lua_register(L, "getKeyPressed", luaGetKeyPressed);
-    lua_register(L, "getCharPressed", luaGetCharPressed);
-    lua_register(L, "bgTileLoad", luaBgTileLoad);
-    lua_register(L, "spriteTileLoad", luaSpriteTileLoad);
+    // lua_register(L, "getKeyPressed", luaGetKeyPressed);
+    // lua_register(L, "getCharPressed", luaGetCharPressed);
+    // lua_register(L, "bgTileLoad", luaBgTileLoad);
+    // lua_register(L, "spriteTileLoad", luaSpriteTileLoad);
     lua_register(L, "drawFilled", luaDrawFilled);
     lua_register(L, "setTransparent", LuaSetTransparent);
     lua_register(L, "setSprite", LuaSetSprite);
     lua_register(L, "setSpriteX", LuaSetSpriteX);
     lua_register(L, "setSpriteY", LuaSetSpriteY);
     lua_register(L, "setSpriteTileIndex", LuaSetSpriteTileIndex);
-    lua_register(L, "saveTiles", luaSaveTiles);
-    lua_register(L, "saveSprites", luaSaveSprites);
-    lua_register(L, "loadTilesData", luaLoadTilesData);
+    // lua_register(L, "saveTiles", luaSaveTiles);
+    // lua_register(L, "saveSprites", luaSaveSprites);
+    // lua_register(L, "loadTilesData", luaLoadTilesData);
     lua_register(L, "printS", luaPrintS);
     lua_register(L, "print", luaPrint);
 }
