@@ -165,9 +165,9 @@ int main(void)
     SetTraceLogCallback(CustomLog);
     
     #if defined(PLATFORM_WEB)
-        InitWindow(getInnerWidth(),getInnerHeight(), "Fantasy Console");
+        InitWindow(getInnerWidth(),getInnerHeight(), "Sen8");
     #else
-        InitWindow(256, 240, "Fantasy Console");
+        InitWindow(256, 240, "Sen8");
     #endif
     // This should use the flag FLAG_FULLSCREEN_MODE which results in a possible ToggleFullscreen() call later on
     SetWindowState(FLAG_WINDOW_RESIZABLE);

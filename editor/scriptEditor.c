@@ -5,13 +5,26 @@
 #include <stdio.h>
 #include "../core.h"
 #include "editor.h"
+#if defined(PLATFORM_WEB)
+#include <emscripten/emscripten.h>
+EM_ASYNC_JS(char*, getClipboardText, (), {
+    var text = await navigator.clipboard.readText();
+    var lengthBytes = lengthBytesUTF8(text) + 1;
+    var stringOnWasmHeap = _malloc(lengthBytes);
+    stringToUTF8(text, stringOnWasmHeap, lengthBytes);
+    return stringOnWasmHeap;
+});
 
+
+#endif
 
 doubleLinkedList *scriptEditorLines;
-doubleLinkedList *scriptEditorCursor;
+
 int rowCursor = 0;
 int lineCursor = 0;
 int savedRowCursor = 0;
+int startSelectionRowCursor;
+int startSelectionLineCursor;
 Vector2 camPos = {0,0};
 extern core cCore;
 string lastScript;
@@ -44,7 +57,182 @@ string luaKeywords[] = {
 u8 luaKeywordsCount =21;
 
 
+void deleteTextFromTo(int x0,int y0, int x1, int y1)
+{
+    int topLine, bottomLine;
+    int topRow, bottomRow;
+    int leftRow, rightRow;
+    if(y0<y1)
+    {
+        topLine = y0;
+        bottomLine = y1;
+        topRow = x0;
+        bottomRow = x1;
+    }
+    else
+    {
+        topLine = y1;
+        bottomLine = y0;
+        topRow=x1;
+        bottomRow=x0;
+    }
+    if(x0<x1)
+    {
+        leftRow = x0;
+        rightRow = x1;
+    }
+    else
+    {
+        leftRow = x1;
+        rightRow = x0;
+    }
+    doubleLinkedList *cursor =  scriptEditorLines;
+    for(int i = 0;i<topLine;i++)
+    {
+        cursor = cursor->next;
+    }
+    if(y0==y1)
+    {
+        cursor->data = removeFlexStringInFlexString(cursor->data,leftRow,rightRow-leftRow);
+        return;
+    }
+    cursor->data = removeFlexStringInFlexString(cursor->data,topRow,((flexString*)cursor->data)->byteUsed - topRow);
+    for(int i = 1; i<bottomLine-topLine;i++)
+    {
+        scriptEditorLines = removeNextDoubleLinkedList(scriptEditorLines,cursor);
+    }
+    cursor = cursor->next;
+    cursor->data = removeFlexStringInFlexString(cursor->data,0, bottomRow);
+    cursor = cursor->prev;
+    cursor->data = insertFlexStringInFlexString(cursor->data,cursor->next->data,((flexString*)cursor->data)->byteUsed);
+    scriptEditorLines = removeNextDoubleLinkedList(scriptEditorLines,cursor);
+}
+string copyToString(int x0,int y0, int x1, int y1)
+{
+    int topLine, bottomLine;
+    int topRow, bottomRow;
+    int leftRow, rightRow;
+    if(y0<y1)
+    {
+        topLine = y0;
+        bottomLine = y1;
+        topRow = x0;
+        bottomRow = x1;
+    }
+    else
+    {
+        topLine = y1;
+        bottomLine = y0;
+        topRow=x1;
+        bottomRow=x0;
+    }
+    if(x0<x1)
+    {
+        leftRow = x0;
+        rightRow = x1;
+    }
+    else
+    {
+        leftRow = x1;
+        rightRow = x0;
+    }
+    int size = 0;
+    doubleLinkedList *cursor =  scriptEditorLines;
+    for(int i = 0;i<topLine;i++)
+    {
+        cursor = cursor->next;
+    }
+    if(y0==y1)
+    {
+        size = rightRow-leftRow;
+        string out = malloc(size+1);
+        out[size] = '\0';
+        memcpy(out,((flexString*)cursor->data)->string+leftRow,size); 
+        return out;
+    }
+    size = ((flexString*)cursor->data)->byteUsed-topRow+1;
+    for(int i = 1; i<bottomLine-topLine;i++)
+    {
+        cursor = cursor->next;
+        size += ((flexString*)cursor->data)->byteUsed+1;
+    }
+    cursor = cursor->next;
+    size+= rightRow+1;
 
+    string out = malloc(size);
+    cursor =  getDoubleLinkedList(scriptEditorLines,topLine);
+    int currentWritten=0;
+    memcpy(out,((flexString*)cursor->data)->string+topRow,((flexString*)cursor->data)->byteUsed-topRow);
+    currentWritten = ((flexString*)cursor->data)->byteUsed-topRow;
+    out[currentWritten]='\n';
+    currentWritten++;
+    for(int i = 1; i<bottomLine-topLine;i++)
+    {
+        cursor = cursor->next;
+        memcpy(out+currentWritten,((flexString*)cursor->data)->string,((flexString*)cursor->data)->byteUsed);
+        currentWritten += ((flexString*)cursor->data)->byteUsed;
+        out[currentWritten]='\n';
+        currentWritten++;
+    }
+    cursor = cursor->next;
+    memcpy(out+currentWritten,((flexString*)cursor->data)->string,bottomRow);
+    currentWritten+= bottomRow;
+    out[currentWritten]='\0';
+    currentWritten++;
+    return out;
+}
+void insertString(int x0,int y0,string str)
+{
+    doubleLinkedList *cursor = getDoubleLinkedList(scriptEditorLines,y0);
+    u8 c = str[0];
+    int firstln = 0;
+    int yCount=0;
+    while(c!='\0')
+    {
+        if(c=='\n')
+        {
+            break;
+        }
+        firstln++;
+        c = str[firstln];
+    }
+    if(c == '\n')
+    {
+        int i = firstln+1;
+        int lastLn = firstln;
+
+        insertAfterDoubleLinkedList(cursor,newDoubleLinkedList(newFlexString("")));
+        cursor->next->data = insertCharsInFlexString(cursor->next->data,((flexString*)cursor->data)->string+x0,0,((flexString*)cursor->data)->byteUsed-x0);
+        cursor->data =  removeFlexStringInFlexString(cursor->data,x0,((flexString*)cursor->data)->byteUsed-x0);
+        cursor->data = insertCharsInFlexString(cursor->data,str,x0,firstln);
+        while(str[i]!='\0')
+        {
+            if(str[i]=='\n')
+            {
+                insertAfterDoubleLinkedList(cursor,newDoubleLinkedList(newFlexString("")));
+                cursor = cursor->next;
+                yCount++;
+                cursor->data = insertCharsInFlexString(cursor->data,str+lastLn+1,0,i-lastLn-1);
+                lastLn = i;
+            }
+            i++;
+        }
+        cursor = cursor->next;
+        yCount++;
+        cursor->data = insertCharsInFlexString(cursor->data,str+lastLn+1,0,i-lastLn-1);
+        rowCursor = i-lastLn-1;
+        lineCursor += yCount; 
+        startSelectionRowCursor = rowCursor;
+        startSelectionLineCursor = lineCursor;
+    }
+    else
+    {
+        cursor->data = insertCharsInFlexString(cursor->data, str,x0,firstln);
+        rowCursor += firstln;
+        startSelectionRowCursor = rowCursor;
+    }
+    
+}   
 
 string getScriptEditorText()
 {
@@ -101,66 +289,170 @@ void loadScriptFromRam()
     {
         removeAllDoubleLinkedList(scriptEditorLines);
         scriptEditorLines = scriptToDoubleLinkedList(cCore.ram.script);
-        scriptEditorCursor = scriptEditorLines;
         rowCursor = 0;
         lineCursor = 0;
         savedRowCursor = 0;
+        startSelectionLineCursor =0;
+        startSelectionRowCursor =0;
     }
 }
-
+void chooseSmallerCursor()
+{
+    if(lineCursor>startSelectionLineCursor)
+    {
+        lineCursor = startSelectionLineCursor;
+        rowCursor = startSelectionRowCursor;
+    }
+    else if(lineCursor==startSelectionLineCursor)
+    {
+        rowCursor = rowCursor<startSelectionRowCursor ? rowCursor : startSelectionRowCursor;
+    }
+}
 void detectInput()
 {
-    if(IsKeyPressed(KEY_LEFT) || IsKeyPressedRepeat(KEY_LEFT))
+    if(IsKeyDown(KEY_LEFT_CONTROL))
+    {
+        if(IsKeyPressed(KEY_C))
+        {
+            int x0=rowCursor;
+            int y0=lineCursor;
+            int x1=startSelectionRowCursor;
+            int y1=startSelectionLineCursor;
+            if(x0==x1 && y0==y1)
+            {
+                x0 = 0;
+                x1 = ((flexString*)getDoubleLinkedList(scriptEditorLines,y0)->data)->byteUsed;
+            }
+            string str = copyToString(x0,y0,x1,y1);
+            SetClipboardText(str);
+            free(str);
+        }
+        else if(IsKeyPressed(KEY_V))
+        {
+            #if defined(PLATFORM_WEB)
+                cstring str = getClipboardText();
+            #else
+                cstring str = GetClipboardText();
+            #endif
+            
+            insertString(rowCursor,lineCursor,(string)str);
+        }
+        else if(IsKeyPressed(KEY_X))
+        {
+            int x0=rowCursor;
+            int y0=lineCursor;
+            int x1=startSelectionRowCursor;
+            int y1=startSelectionLineCursor;
+            bool cuttingLine = false;
+            if(x0==x1 && y0==y1)
+            {
+                x0 = 0;
+                x1 = ((flexString*)getDoubleLinkedList(scriptEditorLines,y0)->data)->byteUsed;
+                rowCursor = x0;
+                cuttingLine = true;
+            }
+            string str = copyToString(x0,y0,x1,y1);
+            if(cuttingLine)
+            {
+                int len = strlen(str);
+                str = realloc(str,len+2);
+                str[len] = '\n';
+                str[len+1] = '\0';
+            }
+            SetClipboardText(str);
+            deleteTextFromTo(x0,y0,x1,y1);
+            chooseSmallerCursor();
+            doubleLinkedList *line = getDoubleLinkedList(scriptEditorLines,lineCursor);
+            if(cuttingLine)
+            {
+                if(lineCursor>0 || line->next!=NULL)
+                {
+                    scriptEditorLines = removeDoubleLinkedList(scriptEditorLines,line);
+                    if(getDoubleLinkedList(scriptEditorLines,lineCursor)==NULL) lineCursor--;
+                }
+            }
+            startSelectionRowCursor = rowCursor;
+            startSelectionLineCursor = lineCursor;
+        }
+    }
+    else if(IsKeyPressed(KEY_LEFT) || IsKeyPressedRepeat(KEY_LEFT))
     {
         if(rowCursor>0)
         {
             rowCursor--;
             savedRowCursor = rowCursor;
         }
-        else if(scriptEditorCursor->prev != NULL)
+        else if(lineCursor>0)
         {
-            scriptEditorCursor = scriptEditorCursor->prev;
             lineCursor--;
-            rowCursor = ((flexString*)scriptEditorCursor->data)->byteUsed;
+            rowCursor = ((flexString*)getDoubleLinkedList(scriptEditorLines,lineCursor)->data)->byteUsed;
             savedRowCursor = rowCursor;
+        }
+        if(!IsKeyDown(KEY_LEFT_SHIFT))
+        {
+            startSelectionRowCursor = rowCursor;
+            startSelectionLineCursor = lineCursor;
         }
     }
     else if(IsKeyPressed(KEY_RIGHT) || IsKeyPressedRepeat(KEY_RIGHT))
     {
-        if(rowCursor<((flexString*)scriptEditorCursor->data)->byteUsed)
+        if(rowCursor<((flexString*)getDoubleLinkedList(scriptEditorLines,lineCursor)->data)->byteUsed)
         {
             rowCursor++;
             savedRowCursor = rowCursor;
             
         }
-        else if(scriptEditorCursor->next != NULL)
+        else if(getDoubleLinkedList(scriptEditorLines,lineCursor)->next != NULL)
         {
-            scriptEditorCursor = scriptEditorCursor->next;
             lineCursor++;
             rowCursor = 0;
             savedRowCursor = rowCursor;
         }
+        if(!IsKeyDown(KEY_LEFT_SHIFT))
+        {
+            startSelectionRowCursor = rowCursor;
+            startSelectionLineCursor = lineCursor;
+        }
     }
     else if(IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE))
     {
-        if(rowCursor>0)
+        if(lineCursor!=startSelectionLineCursor||rowCursor!=startSelectionRowCursor)
         {
-            scriptEditorCursor->data = removeFlexStringInFlexString(scriptEditorCursor->data,rowCursor-1,1);
-            rowCursor--;
-            savedRowCursor = rowCursor;
+            deleteTextFromTo(rowCursor,lineCursor,startSelectionRowCursor,startSelectionLineCursor);
+            chooseSmallerCursor();
         }
-        else if(scriptEditorCursor->prev != NULL)
-        {
-            scriptEditorCursor = scriptEditorCursor->prev;
-            lineCursor--;
-            rowCursor = ((flexString*)scriptEditorCursor->data)->byteUsed;
-            savedRowCursor = rowCursor;
-            scriptEditorCursor->data = insertFlexStringInFlexString(scriptEditorCursor->data,((flexString*)scriptEditorCursor->next->data),rowCursor);
-            scriptEditorLines = removeDoubleLinkedList(scriptEditorLines,scriptEditorCursor->next);
+        else{
+            doubleLinkedList *scriptEditorCursor = getDoubleLinkedList(scriptEditorLines,lineCursor);
+            if(rowCursor>0)
+            {
+                
+                scriptEditorCursor->data = removeFlexStringInFlexString(scriptEditorCursor->data,rowCursor-1,1);
+                rowCursor--;
+                savedRowCursor = rowCursor;
+            }
+            else if(scriptEditorCursor->prev != NULL)
+            {
+                scriptEditorCursor = scriptEditorCursor->prev;
+                lineCursor--;
+                rowCursor = ((flexString*)scriptEditorCursor->data)->byteUsed;
+                savedRowCursor = rowCursor;
+                scriptEditorCursor->data = insertFlexStringInFlexString(scriptEditorCursor->data,((flexString*)scriptEditorCursor->next->data),rowCursor);
+                scriptEditorLines = removeDoubleLinkedList(scriptEditorLines,scriptEditorCursor->next);
+            }
         }
+        startSelectionRowCursor = rowCursor;
+        startSelectionLineCursor = lineCursor;
     }
     else if(IsKeyPressed(KEY_ENTER) || IsKeyPressedRepeat(KEY_ENTER))
     {
+        if(lineCursor!=startSelectionLineCursor||rowCursor!=startSelectionRowCursor)
+        {
+            deleteTextFromTo(rowCursor,lineCursor,startSelectionRowCursor,startSelectionLineCursor);
+            chooseSmallerCursor();
+            startSelectionRowCursor = rowCursor;
+            startSelectionLineCursor = lineCursor;
+        }
+        doubleLinkedList *scriptEditorCursor = getDoubleLinkedList(scriptEditorLines,lineCursor);
         if (scriptEditorCursor != NULL && scriptEditorCursor->data != NULL) {
             int tabCounter = 0;
             int i = 0;
@@ -185,10 +477,13 @@ void detectInput()
             savedRowCursor =rowCursor;
             lineCursor++;
         }
+        startSelectionRowCursor = rowCursor;
+        startSelectionLineCursor = lineCursor;
         return;
     }
     else if(IsKeyPressed(KEY_UP) || IsKeyPressedRepeat(KEY_UP))
     {
+        doubleLinkedList *scriptEditorCursor = getDoubleLinkedList(scriptEditorLines,lineCursor);
         if(scriptEditorCursor->prev != NULL)
         {
             scriptEditorCursor = scriptEditorCursor->prev;
@@ -215,10 +510,16 @@ void detectInput()
             rowCursor = 0;
             savedRowCursor = 0;
         }
+        if(!IsKeyDown(KEY_LEFT_SHIFT))
+        {
+            startSelectionRowCursor = rowCursor;
+            startSelectionLineCursor = lineCursor;
+        }
         return;
     }
     else if(IsKeyPressed(KEY_DOWN) || IsKeyPressedRepeat(KEY_DOWN))
     {
+        doubleLinkedList *scriptEditorCursor = getDoubleLinkedList(scriptEditorLines,lineCursor);
         if(scriptEditorCursor->next != NULL)
         {
             scriptEditorCursor = scriptEditorCursor->next;
@@ -241,28 +542,59 @@ void detectInput()
             rowCursor = ((flexString*)scriptEditorCursor->data)->byteUsed;
             savedRowCursor = rowCursor;
         }
+        if(!IsKeyDown(KEY_LEFT_SHIFT))
+        {
+            startSelectionRowCursor = rowCursor;
+            startSelectionLineCursor = lineCursor;
+        }
         return;
     }
     else if(IsKeyPressed(KEY_DELETE) || IsKeyPressedRepeat(KEY_DELETE))
     {
-        scriptEditorCursor->data = removeFlexStringInFlexString(scriptEditorCursor->data,rowCursor,1);
+        if(lineCursor!=startSelectionLineCursor||rowCursor!=startSelectionRowCursor)
+        {
+            deleteTextFromTo(rowCursor,lineCursor,startSelectionRowCursor,startSelectionLineCursor);
+            chooseSmallerCursor();
+        }
+        else
+        {
+            doubleLinkedList *scriptEditorCursor = getDoubleLinkedList(scriptEditorLines,lineCursor);
+            scriptEditorCursor->data = removeFlexStringInFlexString(scriptEditorCursor->data,rowCursor,1);
+        }
+        startSelectionRowCursor = rowCursor;
+        startSelectionLineCursor = lineCursor;
         return;
     }
     else if(IsKeyPressed(KEY_TAB) || IsKeyPressedRepeat(KEY_TAB))
     {
+        if(lineCursor!=startSelectionLineCursor||rowCursor!=startSelectionRowCursor)
+        {
+            deleteTextFromTo(rowCursor,lineCursor,startSelectionRowCursor,startSelectionLineCursor);
+            chooseSmallerCursor();
+        }
+        doubleLinkedList *scriptEditorCursor = getDoubleLinkedList(scriptEditorLines,lineCursor);
         scriptEditorCursor->data = insertCharsInFlexString(scriptEditorCursor->data,"\t",rowCursor,1);
         rowCursor++;
         savedRowCursor = rowCursor;
+        startSelectionRowCursor = rowCursor;
+        startSelectionLineCursor = lineCursor;
         return;
     }
     
     char c = GetCharPressed();
     if(c != 0 && c<128)
     {
-
+        if(lineCursor!=startSelectionLineCursor||rowCursor!=startSelectionRowCursor)
+        {
+            deleteTextFromTo(rowCursor,lineCursor,startSelectionRowCursor,startSelectionLineCursor);
+            chooseSmallerCursor();
+        }
+        doubleLinkedList *scriptEditorCursor = getDoubleLinkedList(scriptEditorLines,lineCursor);
         scriptEditorCursor->data = insertCharsInFlexString(scriptEditorCursor->data, &c,rowCursor,1);
         rowCursor++;
         savedRowCursor = rowCursor;
+        startSelectionRowCursor = rowCursor;
+        startSelectionLineCursor = lineCursor;
     }
 }
 bool isUsableWordsChar(char c)
@@ -360,6 +692,16 @@ void drawText()
     doubleLinkedList *current = scriptEditorLines;
     int i = 0;
     u8 color = _WHITE;
+    int topLineSelected = lineCursor < startSelectionLineCursor ? lineCursor : startSelectionLineCursor;
+    int bottomLineSelected = lineCursor < startSelectionLineCursor ? startSelectionLineCursor : lineCursor;
+
+    int topRowSelected = lineCursor < startSelectionLineCursor ? rowCursor : startSelectionRowCursor;
+    int bottomRowSelected = lineCursor < startSelectionLineCursor ? startSelectionRowCursor : rowCursor;
+
+
+    int leftRowSelected = rowCursor < startSelectionRowCursor ? rowCursor : startSelectionRowCursor;
+    int rightRowSelected = rowCursor < startSelectionRowCursor ? startSelectionRowCursor : rowCursor;
+
     while(current != NULL)
     {
         flexString *line = current->data;
@@ -447,24 +789,56 @@ void drawText()
                 {
                     color = _WHITE;
                 }
-                
+
+                if(
+                    (
+                        topLineSelected<i
+                        &&
+                        i<bottomLineSelected
+                    )
+                    ||
+                    (
+                        startSelectionLineCursor == lineCursor
+                        &&
+                        lineCursor ==i
+                        &&
+                        leftRowSelected <=j
+                        &&
+                        j< rightRowSelected
+                    )
+                    ||
+                    (
+                        startSelectionLineCursor != lineCursor
+                        &&
+                        i == topLineSelected
+                        &&
+                        j>= topRowSelected
+                    )
+                    ||
+                    (
+                        startSelectionLineCursor != lineCursor
+                        &&
+                        i == bottomLineSelected
+                        &&
+                        j < bottomRowSelected
+                    )
+                )
+                {
+                    drawRectFilled(cX,cY,6,6,_BLUE,6);
+                }
                 printC(cX,cY,c,color,10);
             }
             if(remainingColoredChar>0)
             {
                 remainingColoredChar--;
             }
-
-
         }
 
         i++;
         current = current->next;
     }
-    if(drawSelector)
+    if(drawSelector && lineCursor==startSelectionLineCursor && rowCursor ==startSelectionRowCursor)
     drawRectFilled(xOff+(rowCursor*6)-camPos.x,yOff+(lineCursor*6)-camPos.y,6,6,_BLUE,6);
-
-
 
 
     frameCounter++;
@@ -479,10 +853,7 @@ void scriptEditorLoop()
     {
         scriptEditorLines = newDoubleLinkedList(newFlexString(""));
     }
-    if(scriptEditorCursor == NULL)
-    {
-        scriptEditorCursor = scriptEditorLines;
-    }
+
     for(int i = 2; i < 29; i++)
     {
         drawHorizontaFilledLine(0, 32, i, _DARK_BLUE,5);

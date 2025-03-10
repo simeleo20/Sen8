@@ -145,7 +145,6 @@ void drawTileSP(int x, int y, tile *t, bool transparency, s8 z)
 //draw tile with screen position with flips
 void drawTileSPFlips(int x, int y, tile *t, bool transparency, s8 z, bool flipH, bool flipV)
 {
-    //printf("%d %d\n",flipH,flipV);
     for(int i = 0; i < 8; i++)
     {
         for(int j = 0; j < 8; j++)

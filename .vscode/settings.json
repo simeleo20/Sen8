@@ -34,6 +34,7 @@
     "deque": "c",
     "string": "c",
     "unordered_map": "c",
-    "text_encoding": "c"
+    "text_encoding": "c",
+    "emscripten.h": "c"
   }
 }

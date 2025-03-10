@@ -112,3 +112,14 @@ void printDoubleLinkedListLine(doubleLinkedList *head)
         current = current->next;
     }
 }
+
+doubleLinkedList *getDoubleLinkedList(doubleLinkedList *head,int index)
+{
+    doubleLinkedList *cursor = head;
+    for(int i=0; i<index;i++)
+    {
+        if(cursor == NULL) return NULL;
+        cursor = cursor->next;
+    }
+    return cursor;
+}

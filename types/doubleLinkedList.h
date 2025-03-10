@@ -20,5 +20,6 @@ doubleLinkedList *removePrevDoubleLinkedList(doubleLinkedList *head, doubleLinke
 doubleLinkedList *removeNextDoubleLinkedList(doubleLinkedList *head, doubleLinkedList *node);
 void removeAllDoubleLinkedList(doubleLinkedList *head);
 void printDoubleLinkedListLine(doubleLinkedList *head);
+doubleLinkedList *getDoubleLinkedList(doubleLinkedList *head,int index);
 
 #endif // DOUBLE_LINKED_LIST_H
