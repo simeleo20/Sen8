@@ -8,4 +8,4 @@ Usefull links:
 - Web version: https://sen8.leonardosimeone.com/
 - Wiki: https://github.com/simeleo20/Sen8/wiki
 
-[Sen8_25_02_26.webm](https://github.com/user-attachments/assets/0fe34aa7-81fb-4856-9ad0-d8068b71e6ad)
+[video sen8.webm](https://github.com/user-attachments/assets/be30ad7f-ca69-4b92-98ec-d8b3bbcf34b0)
